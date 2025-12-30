@@ -39,15 +39,21 @@ Auto-invoked skills that Claude applies when relevant:
 
 | Skill | Trigger | Description |
 |-------|---------|-------------|
-| `linear` | "tasks", "issues", "Linear" | Simple Linear task management - view, create, update issues |
+| `linear` | "tasks", "issues", "Linear" | Full Linear task management - view, search, create, update issues |
 
-**Linear Skill Setup:**
+**Linear Skill Features:**
+- `my-tasks` / `backlog` / `in-progress` / `team-tasks` - View issues by state
+- `search "query"` - Search title and description
+- `--label NAME` - Filter any list by label
+- `create` / `start` / `done` / `show` / `comment` - Issue actions
+
+**Setup:**
 ```bash
 cd skills/linear && ./install.sh
 export LINEAR_API_KEY="lin_api_..."  # Add to ~/.zshrc
 ```
 
-Then just talk naturally: "show my tasks", "create task: fix the bug", "mark ENG-123 done"
+Then just talk naturally: "show my tasks", "search rebrand issues", "mark ENG-123 done"
 
 ### Commands (2)
 
