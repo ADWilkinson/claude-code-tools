@@ -59,12 +59,13 @@ export LINEAR_API_KEY="lin_api_..."  # Add to ~/.zshrc
 
 Then just talk naturally: "show my tasks", "search rebrand issues", "mark ENG-123 done"
 
-### Commands (2)
+### Commands (3)
 
 Slash commands for common workflows:
 
 - `/repo-polish` - Fire-and-forget repository cleanup. Creates a branch, fixes issues, opens a PR.
 - `/update-claudes` - Generates CLAUDE.md files throughout your project for AI context.
+- `/minimize-ui` - Systematic UI minimalization through ruthless reduction. 7-phase workflow that removes before polishing.
 
 ### Statusline
 
