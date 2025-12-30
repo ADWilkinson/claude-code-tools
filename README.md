@@ -156,9 +156,9 @@ You are an expert...
 - **Related task**: HANDOFF:other-agent
 ```
 
-## Contributing
+## Creating Your Own
 
-Want to add your own agents, skills, or commands? Templates are provided:
+Templates are included if you want to fork and create your own tools:
 
 ```bash
 # Create a new agent
@@ -172,13 +172,7 @@ cp templates/skill-template.md skills/your-skill/SKILL.md
 cp templates/command-template.md commands/your-command.md
 ```
 
-**Guidelines:**
-- Follow existing naming conventions (kebab-case)
-- Include clear descriptions for when Claude should invoke your tool
-- Test locally before submitting
-- Keep dependencies minimal
-
-PRs welcome. For major changes, open an issue first.
+Follow existing naming conventions (kebab-case) and include clear descriptions for when Claude should invoke your tool.
 
 ## Author
 
