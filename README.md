@@ -99,6 +99,31 @@ Custom statusline showing:
 ./install.sh --claude-dir /path/to/.claude
 ```
 
+## Update
+
+Pull the latest versions without re-cloning:
+
+```bash
+./update.sh
+
+# Preview what would be updated
+./update.sh --dry-run
+```
+
+## Uninstall
+
+Remove all installed tools:
+
+```bash
+./uninstall.sh
+
+# Preview what would be removed
+./uninstall.sh --dry-run
+
+# Skip confirmation
+./uninstall.sh --force
+```
+
 ## Manual Installation
 
 ### Agents
