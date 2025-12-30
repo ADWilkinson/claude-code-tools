@@ -1,6 +1,10 @@
 # Claude Code Tools
 
-Custom agents, commands, and statusline for [Claude Code](https://github.com/anthropics/claude-code).
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub last commit](https://img.shields.io/github/last-commit/ADWilkinson/claude-code-tools)](https://github.com/ADWilkinson/claude-code-tools/commits/main)
+[![GitHub stars](https://img.shields.io/github/stars/ADWilkinson/claude-code-tools?style=social)](https://github.com/ADWilkinson/claude-code-tools)
+
+Custom agents, commands, skills, and statusline for [Claude Code](https://github.com/anthropics/claude-code).
 
 ## Quick Install
 
@@ -151,6 +155,30 @@ You are an expert...
 ## Handoff Protocol
 - **Related task**: HANDOFF:other-agent
 ```
+
+## Contributing
+
+Want to add your own agents, skills, or commands? Templates are provided:
+
+```bash
+# Create a new agent
+cp templates/agent-template.md agents/your-agent-name.md
+
+# Create a new skill
+mkdir -p skills/your-skill/scripts
+cp templates/skill-template.md skills/your-skill/SKILL.md
+
+# Create a new command
+cp templates/command-template.md commands/your-command.md
+```
+
+**Guidelines:**
+- Follow existing naming conventions (kebab-case)
+- Include clear descriptions for when Claude should invoke your tool
+- Test locally before submitting
+- Keep dependencies minimal
+
+PRs welcome. For major changes, open an issue first.
 
 ## Author
 
