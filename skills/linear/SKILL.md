@@ -33,12 +33,34 @@ Get key from: Linear → Settings → Security & access → Personal API keys
 
 ```bash
 npx tsx ~/.claude/skills/linear/scripts/linear.ts my-tasks
+npx tsx ~/.claude/skills/linear/scripts/linear.ts my-tasks --label "frontend"
 ```
 
 ### View In Progress
 
 ```bash
 npx tsx ~/.claude/skills/linear/scripts/linear.ts in-progress
+```
+
+### View Backlog
+
+```bash
+npx tsx ~/.claude/skills/linear/scripts/linear.ts backlog
+npx tsx ~/.claude/skills/linear/scripts/linear.ts backlog --label "tech-debt"
+```
+
+### View All Team Tasks
+
+```bash
+npx tsx ~/.claude/skills/linear/scripts/linear.ts team-tasks
+npx tsx ~/.claude/skills/linear/scripts/linear.ts team-tasks --label "urgent"
+```
+
+### Search Issues
+
+```bash
+npx tsx ~/.claude/skills/linear/scripts/linear.ts search "rebrand"
+npx tsx ~/.claude/skills/linear/scripts/linear.ts search "auth" --label "security"
 ```
 
 ### Create Task (Assigned to Me)
@@ -77,6 +99,23 @@ npx tsx ~/.claude/skills/linear/scripts/linear.ts show ISSUE-ID
 npx tsx ~/.claude/skills/linear/scripts/linear.ts comment ISSUE-ID "Comment text"
 ```
 
+## Filtering
+
+All list commands support the `--label` flag for filtering:
+
+```bash
+# Filter my tasks by label
+my-tasks --label "frontend"
+
+# Search with label filter
+search "bug" --label "critical"
+
+# Team tasks with label
+team-tasks --label "reskin"
+```
+
+Label matching is case-insensitive and partial (e.g., `--label front` matches "frontend").
+
 ## State Conventions
 
 | Scenario | State |
@@ -92,6 +131,10 @@ npx tsx ~/.claude/skills/linear/scripts/linear.ts comment ISSUE-ID "Comment text
 |-----------|--------|
 | "show my tasks" / "what's on my plate" | `my-tasks` |
 | "what am I working on" | `in-progress` |
+| "show my backlog" | `backlog` |
+| "show all team tasks" | `team-tasks` |
+| "search for rebrand tasks" | `search "rebrand"` |
+| "find frontend issues" | `my-tasks --label "frontend"` |
 | "create task: X" / "add task X" | `create "X" --assignee me` |
 | "add to backlog: X" | `create "X"` |
 | "done with X" / "complete X" / "finished X" | `done X` |
@@ -100,14 +143,18 @@ npx tsx ~/.claude/skills/linear/scripts/linear.ts comment ISSUE-ID "Comment text
 
 ## Output Format
 
-Always format task output as a clean table:
+Task lists show a clean table with issue count:
 
 ```
-ID        | Title                    | State       | Priority
-----------|--------------------------|-------------|----------
-ENG-123   | Fix login bug            | In Progress | High
-ENG-124   | Update docs              | Todo        | Medium
+ID         | Title                                              | State        | Priority
+-----------|----------------------------------------------------|--------------|---------
+ENG-123    | Fix login bug causing session timeout              | In Progress  | High
+ENG-124    | Update documentation for new API endpoints         | Todo         | Medium
+
+2 issues found.
 ```
+
+Team tasks and search results include an Assignee column.
 
 ## Error Handling
 

@@ -5,8 +5,11 @@
  * Author: Andrew Wilkinson (github.com/ADWilkinson)
  *
  * Usage:
- *   npx tsx linear.ts my-tasks
+ *   npx tsx linear.ts my-tasks [--label LABEL]
  *   npx tsx linear.ts in-progress
+ *   npx tsx linear.ts backlog [--label LABEL]
+ *   npx tsx linear.ts team-tasks [--label LABEL]
+ *   npx tsx linear.ts search "query" [--label LABEL]
  *   npx tsx linear.ts create "Task title" [--assignee me] [--team TEAM]
  *   npx tsx linear.ts done ISSUE-ID
  *   npx tsx linear.ts start ISSUE-ID
@@ -38,36 +41,60 @@ const PRIORITY_LABELS: Record<Priority, string> = {
   4: 'Low',
 };
 
+// Parse --label flag from args
+function parseLabel(args: string[]): string | undefined {
+  const labelIdx = args.indexOf('--label');
+  return labelIdx !== -1 ? args[labelIdx + 1] : undefined;
+}
+
 function formatPriority(priority: number): string {
   return PRIORITY_LABELS[priority as Priority] || 'None';
 }
 
-function formatTable(issues: Array<{ id: string; title: string; state: string; priority: number }>) {
+function formatTable(issues: Array<{ id: string; title: string; state: string; priority: number; assignee?: string }>, showAssignee = false) {
   if (issues.length === 0) {
     console.log('No issues found.');
     return;
   }
 
-  console.log('ID        | Title                              | State        | Priority');
-  console.log('----------|------------------------------------|--------------|---------');
+  if (showAssignee) {
+    console.log('ID         | Title                                              | State        | Priority | Assignee');
+    console.log('-----------|----------------------------------------------------|--------------|-----------|---------');
+  } else {
+    console.log('ID         | Title                                              | State        | Priority');
+    console.log('-----------|----------------------------------------------------|--------------|---------');
+  }
 
   for (const issue of issues) {
-    const id = issue.id.padEnd(9);
-    const title = issue.title.length > 34 ? issue.title.slice(0, 31) + '...' : issue.title.padEnd(34);
+    const id = issue.id.padEnd(10);
+    const title = issue.title.length > 50 ? issue.title.slice(0, 47) + '...' : issue.title.padEnd(50);
     const state = issue.state.padEnd(12);
-    const priority = formatPriority(issue.priority);
-    console.log(`${id} | ${title} | ${state} | ${priority}`);
+    const priority = formatPriority(issue.priority).padEnd(9);
+
+    if (showAssignee) {
+      const assignee = (issue.assignee || 'Unassigned').slice(0, 15);
+      console.log(`${id} | ${title} | ${state} | ${priority} | ${assignee}`);
+    } else {
+      console.log(`${id} | ${title} | ${state} | ${priority}`);
+    }
   }
+
+  console.log(`\n${issues.length} issue${issues.length === 1 ? '' : 's'} found.`);
 }
 
-async function getMyTasks() {
+async function getMyTasks(labelFilter?: string) {
   const me = await client.viewer;
-  const issues = await client.issues({
-    filter: {
-      assignee: { id: { eq: me.id } },
-      state: { type: { nin: ['completed', 'canceled'] } }
-    }
-  });
+
+  const filter: any = {
+    assignee: { id: { eq: me.id } },
+    state: { type: { nin: ['completed', 'canceled'] } }
+  };
+
+  if (labelFilter) {
+    filter.labels = { name: { containsIgnoreCase: labelFilter } };
+  }
+
+  const issues = await client.issues({ filter });
 
   const formatted = await Promise.all(
     issues.nodes.map(async (issue) => ({
@@ -100,6 +127,83 @@ async function getInProgress() {
   );
 
   formatTable(formatted);
+}
+
+async function getBacklog(labelFilter?: string) {
+  const me = await client.viewer;
+
+  const filter: any = {
+    assignee: { id: { eq: me.id } },
+    state: { type: { eq: 'backlog' } }
+  };
+
+  if (labelFilter) {
+    filter.labels = { name: { containsIgnoreCase: labelFilter } };
+  }
+
+  const issues = await client.issues({ filter });
+
+  const formatted = await Promise.all(
+    issues.nodes.map(async (issue) => ({
+      id: issue.identifier,
+      title: issue.title,
+      state: (await issue.state)?.name || 'Unknown',
+      priority: issue.priority,
+    }))
+  );
+
+  formatTable(formatted);
+}
+
+async function getTeamTasks(labelFilter?: string) {
+  const filter: any = {
+    state: { type: { nin: ['completed', 'canceled'] } }
+  };
+
+  if (labelFilter) {
+    filter.labels = { name: { containsIgnoreCase: labelFilter } };
+  }
+
+  const issues = await client.issues({ filter });
+
+  const formatted = await Promise.all(
+    issues.nodes.map(async (issue) => ({
+      id: issue.identifier,
+      title: issue.title,
+      state: (await issue.state)?.name || 'Unknown',
+      priority: issue.priority,
+      assignee: (await issue.assignee)?.name,
+    }))
+  );
+
+  formatTable(formatted, true);
+}
+
+async function searchIssues(query: string, labelFilter?: string) {
+  const filter: any = {
+    or: [
+      { title: { containsIgnoreCase: query } },
+      { description: { containsIgnoreCase: query } }
+    ]
+  };
+
+  if (labelFilter) {
+    filter.labels = { name: { containsIgnoreCase: labelFilter } };
+  }
+
+  const issues = await client.issues({ filter });
+
+  const formatted = await Promise.all(
+    issues.nodes.map(async (issue) => ({
+      id: issue.identifier,
+      title: issue.title,
+      state: (await issue.state)?.name || 'Unknown',
+      priority: issue.priority,
+      assignee: (await issue.assignee)?.name,
+    }))
+  );
+
+  formatTable(formatted, true);
 }
 
 async function createTask(title: string, assignToMe: boolean, teamKey?: string) {
@@ -193,7 +297,7 @@ async function showIssue(issueId: string) {
   const labels = await issue.labels();
 
   console.log(`${issue.identifier}: ${issue.title}`);
-  console.log('─'.repeat(50));
+  console.log('─'.repeat(60));
   console.log(`Team:     ${team?.name || 'Unknown'}`);
   console.log(`State:    ${state?.name || 'Unknown'}`);
   console.log(`Priority: ${formatPriority(issue.priority)}`);
@@ -202,7 +306,7 @@ async function showIssue(issueId: string) {
   console.log(`Created:  ${issue.createdAt.toLocaleDateString()}`);
 
   if (issue.description) {
-    console.log('─'.repeat(50));
+    console.log('─'.repeat(60));
     console.log(issue.description);
   }
 }
@@ -228,25 +332,53 @@ async function main() {
   const [command, ...args] = process.argv.slice(2);
 
   if (!command) {
-    console.log('Linear CLI - Commands:');
-    console.log('  my-tasks              List your assigned issues');
-    console.log('  in-progress           List issues you\'re working on');
-    console.log('  create "title"        Create issue (add --assignee me to assign)');
-    console.log('  done ISSUE-ID         Mark issue as done');
-    console.log('  start ISSUE-ID        Start working on issue');
-    console.log('  show ISSUE-ID         Show issue details');
-    console.log('  comment ISSUE-ID "text"  Add comment');
+    console.log('Linear CLI - Commands:\n');
+    console.log('  Listing:');
+    console.log('    my-tasks [--label X]      Your assigned issues (excludes completed)');
+    console.log('    in-progress               Issues you\'re actively working on');
+    console.log('    backlog [--label X]       Your backlog items');
+    console.log('    team-tasks [--label X]    All team issues (shows assignee)');
+    console.log('    search "query" [--label X] Search title/description\n');
+    console.log('  Actions:');
+    console.log('    create "title"            Create issue (add --assignee me to assign)');
+    console.log('    start ISSUE-ID            Move to In Progress');
+    console.log('    done ISSUE-ID             Mark as done');
+    console.log('    show ISSUE-ID             Show full details');
+    console.log('    comment ISSUE-ID "text"   Add comment\n');
+    console.log('  Filtering:');
+    console.log('    --label NAME              Filter by label (partial match)');
     process.exit(0);
   }
 
+  const labelFilter = parseLabel(args);
+
   switch (command) {
     case 'my-tasks':
-      await getMyTasks();
+      await getMyTasks(labelFilter);
       break;
 
     case 'in-progress':
       await getInProgress();
       break;
+
+    case 'backlog':
+      await getBacklog(labelFilter);
+      break;
+
+    case 'team-tasks':
+      await getTeamTasks(labelFilter);
+      break;
+
+    case 'search': {
+      const query = args[0];
+      if (!query || query.startsWith('--')) {
+        console.error('ERROR: Search query required');
+        console.error('Usage: search "query" [--label LABEL]');
+        process.exit(1);
+      }
+      await searchIssues(query, labelFilter);
+      break;
+    }
 
     case 'create': {
       const title = args[0];
