@@ -16,7 +16,7 @@ cd claude-code-tools
 
 ## What's Included
 
-### Agents (12)
+### Agents (15)
 
 Specialized subagents invoked automatically by Claude Code's Task tool:
 
@@ -25,13 +25,16 @@ Specialized subagents invoked automatically by Claude Code's Task tool:
 | `backend-developer` | Express/Node.js, REST APIs, authentication, webhooks |
 | `blockchain-specialist` | Solidity, Wagmi, multi-chain, gas optimization |
 | `database-manager` | PostgreSQL, Prisma ORM, query optimization |
+| `debugger` | Root cause analysis, error tracing, systematic debugging |
 | `devops-engineer` | CI/CD, Docker, GitHub Actions, cloud deployment |
 | `extension-developer` | Chrome Manifest V3, service workers, messaging |
 | `firebase-specialist` | Firestore, Cloud Functions, FCM, security rules |
 | `frontend-developer` | React, Next.js, TanStack Query, Tailwind |
 | `indexer-developer` | Envio, The Graph, GraphQL, event handlers |
+| `mcp-developer` | MCP servers, tool definitions, LLM integrations |
 | `mobile-developer` | React Native, Expo, biometrics, push notifications |
 | `performance-engineer` | Profiling, caching, load testing, optimization |
+| `refactoring-specialist` | Code smells, safe transformations, complexity reduction |
 | `testing-specialist` | Jest, Playwright, E2E, mocking strategies |
 | `zk-specialist` | ZK circuits, Circom/Noir, trusted setup |
 

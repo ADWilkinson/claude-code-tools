@@ -6,7 +6,7 @@
 
 set -e
 
-VERSION="1.1.0"
+VERSION="1.2.0"
 
 # Colors
 RED='\033[0;31m'
@@ -298,7 +298,7 @@ show_summary() {
     echo
     echo -e "${BOLD}Usage:${NC}"
     echo "  Agents are auto-invoked by Claude Code via the Task tool"
-    echo "  Commands: /repo-polish, /update-claudes"
+    echo "  Commands: /repo-polish, /update-claudes, /minimize-ui"
     echo
 }
 
