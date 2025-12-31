@@ -86,6 +86,44 @@ const items = await prisma.item.findMany({
 });
 ```
 
+## Migration Patterns
+
+```bash
+# Create migration
+npx prisma migrate dev --name add_user_status
+
+# Deploy to production (non-interactive)
+npx prisma migrate deploy
+
+# Reset database (dev only!)
+npx prisma migrate reset
+```
+
+```typescript
+// Safe data migration in code
+async function migrateUserStatus() {
+  const batchSize = 1000;
+  let processed = 0;
+
+  while (true) {
+    const users = await prisma.user.findMany({
+      where: { status: null },
+      take: batchSize,
+    });
+
+    if (users.length === 0) break;
+
+    await prisma.user.updateMany({
+      where: { id: { in: users.map(u => u.id) } },
+      data: { status: 'ACTIVE' },
+    });
+
+    processed += users.length;
+    console.log(`Migrated ${processed} users`);
+  }
+}
+```
+
 ## Performance Checklist
 
 - [ ] Index columns in WHERE/JOIN

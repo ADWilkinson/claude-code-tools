@@ -54,6 +54,31 @@ app.post('/webhooks/:provider', async (req, res) => {
 });
 ```
 
+## Error Handling
+
+```typescript
+// Structured error responses
+class AppError extends Error {
+  constructor(
+    public statusCode: number,
+    public code: string,
+    message: string
+  ) {
+    super(message);
+  }
+}
+
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  if (err instanceof AppError) {
+    return res.status(err.statusCode).json({
+      error: { code: err.code, message: err.message }
+    });
+  }
+  console.error(err);
+  res.status(500).json({ error: { code: 'INTERNAL', message: 'Internal error' } });
+});
+```
+
 ## Quality Standards
 
 - Strict TypeScript, no `any`

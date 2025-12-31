@@ -96,6 +96,29 @@ export const useAppStore = create<AppStore>()((set) => ({
 }));
 ```
 
+## Form Handling
+
+```typescript
+// React Hook Form + Zod
+const schema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8),
+});
+
+function LoginForm() {
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    resolver: zodResolver(schema),
+  });
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <input {...register('email')} aria-invalid={!!errors.email} />
+      {errors.email && <span role="alert">{errors.email.message}</span>}
+    </form>
+  );
+}
+```
+
 ## Quality Checklist
 
 - [ ] Strict TypeScript, no `any`
@@ -104,6 +127,7 @@ export const useAppStore = create<AppStore>()((set) => ({
 - [ ] Keyboard accessible
 - [ ] Proper ARIA labels
 - [ ] Memoize expensive renders
+- [ ] Form validation with feedback
 
 ## Handoff Protocol
 

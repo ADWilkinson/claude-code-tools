@@ -102,6 +102,36 @@ volumes:
   postgres_data:
 ```
 
+## Monitoring Setup
+
+```yaml
+# Health check endpoint
+/health:
+  - check: database
+  - check: redis
+  - check: external_api
+
+# Key metrics to track
+metrics:
+  - http_request_duration_seconds
+  - http_requests_total
+  - database_query_duration
+  - cache_hit_rate
+```
+
+```typescript
+// Express health check
+app.get('/health', async (req, res) => {
+  const checks = {
+    database: await checkDb(),
+    redis: await checkRedis(),
+    uptime: process.uptime(),
+  };
+  const healthy = Object.values(checks).every(c => c !== false);
+  res.status(healthy ? 200 : 503).json(checks);
+});
+```
+
 ## Security Checklist
 
 - [ ] Secrets in GitHub Secrets, not code
@@ -109,6 +139,7 @@ volumes:
 - [ ] Environment-specific configs
 - [ ] Rotate credentials regularly
 - [ ] Enable audit logging
+- [ ] Health checks configured
 
 ## Handoff Protocol
 

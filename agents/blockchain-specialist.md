@@ -64,6 +64,29 @@ await writeContractAsync({
 });
 ```
 
+## Testing Pattern (Foundry)
+
+```solidity
+// Fuzz testing
+function testFuzz_Deposit(uint256 amount) public {
+    vm.assume(amount > 0 && amount <= 1e24);
+    token.mint(user, amount);
+
+    vm.startPrank(user);
+    token.approve(address(vault), amount);
+    vault.deposit(amount);
+    vm.stopPrank();
+
+    assertEq(vault.balances(user), amount);
+}
+
+// Fork testing
+function testFork_SwapOnUniswap() public {
+    vm.createSelectFork("mainnet", 18_000_000);
+    // Test against real mainnet state
+}
+```
+
 ## Security Checklist
 
 - [ ] Checks-effects-interactions pattern
@@ -73,6 +96,7 @@ await writeContractAsync({
 - [ ] Access control
 - [ ] No hardcoded keys
 - [ ] Test on testnet first
+- [ ] Fuzz testing for edge cases
 
 ## Private Key Security
 
