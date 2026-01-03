@@ -4,7 +4,7 @@
 [![GitHub last commit](https://img.shields.io/github/last-commit/ADWilkinson/claude-code-tools)](https://github.com/ADWilkinson/claude-code-tools/commits/main)
 [![GitHub stars](https://img.shields.io/github/stars/ADWilkinson/claude-code-tools?style=social)](https://github.com/ADWilkinson/claude-code-tools)
 
-Custom agents, commands, skills, and statusline for [Claude Code](https://github.com/anthropics/claude-code).
+Custom agents, commands, skills, hooks, and statusline for [Claude Code](https://github.com/anthropics/claude-code).
 
 ## Quick Install
 
@@ -16,7 +16,7 @@ cd claude-code-tools
 
 ## What's Included
 
-### Agents (15)
+### Agents (16)
 
 Specialized subagents invoked automatically by Claude Code's Task tool:
 
@@ -24,6 +24,7 @@ Specialized subagents invoked automatically by Claude Code's Task tool:
 |-------|-------------|
 | `backend-developer` | Express/Node.js, REST APIs, authentication, webhooks |
 | `blockchain-specialist` | Solidity, Wagmi, multi-chain, gas optimization |
+| `code-simplifier` | Remove over-engineering, dead code, verbose patterns |
 | `database-manager` | PostgreSQL, Prisma ORM, query optimization |
 | `debugger` | Root cause analysis, error tracing, systematic debugging |
 | `devops-engineer` | CI/CD, Docker, GitHub Actions, cloud deployment |
@@ -40,13 +41,14 @@ Specialized subagents invoked automatically by Claude Code's Task tool:
 
 All agents use **opus** model for maximum capability.
 
-### Skills (1)
+### Skills (2)
 
 Auto-invoked skills that Claude applies when relevant:
 
 | Skill | Trigger | Description |
 |-------|---------|-------------|
 | `linear` | "tasks", "issues", "Linear" | Full Linear task management - view, search, create, update issues |
+| `verify-changes` | After implementing features | Run tests, builds, checks to verify code works |
 
 **Linear Skill Features:**
 - `my-tasks` / `backlog` / `in-progress` / `team-tasks` - View issues by state
@@ -62,13 +64,16 @@ export LINEAR_API_KEY="lin_api_..."  # Add to ~/.zshrc
 
 Then just talk naturally: "show my tasks", "search rebrand issues", "mark ENG-123 done"
 
-### Commands (3)
+**verify-changes**: Auto-detects project type and runs appropriate verification (typecheck, lint, test, build). Provides the feedback loop that 2-3x code quality.
+
+### Commands (4)
 
 Slash commands for common workflows:
 
 - `/repo-polish` - Fire-and-forget repository cleanup. Creates a branch, fixes issues, opens a PR.
 - `/update-claudes` - Generates CLAUDE.md files throughout your project for AI context.
 - `/minimize-ui` - Systematic UI minimalization through ruthless reduction. 7-phase workflow that removes before polishing.
+- `/generate-precommit-hooks` - Detect project type and set up appropriate pre-commit hooks (husky, lint-staged, etc.).
 
 ### Statusline
 
@@ -77,6 +82,14 @@ Custom statusline showing:
 - Activity icons for active tools
 - Cumulative cost tracking
 - Code diff stats (+/- lines)
+
+### Hooks (1)
+
+Shell scripts that run at specific points in Claude Code's lifecycle:
+
+- `auto-format.sh` - PostToolUse hook that runs formatters after Claude writes code. Supports Prettier, Ruff, gofmt, rustfmt, forge fmt.
+
+See [hooks/README.md](hooks/README.md) for setup instructions.
 
 ## Installation Options
 
@@ -148,6 +161,14 @@ cp statusline/flying-dutchman-statusline.sh ~/.claude/
 chmod +x ~/.claude/flying-dutchman-statusline.sh
 # Add to ~/.claude/settings.json:
 # "statusline": "~/.claude/flying-dutchman-statusline.sh"
+```
+
+### Hooks
+```bash
+mkdir -p ~/.claude/hooks
+cp hooks/auto-format.sh ~/.claude/hooks/
+chmod +x ~/.claude/hooks/auto-format.sh
+# Add to ~/.claude/settings.json under "hooks" - see hooks/README.md
 ```
 
 ## Agent Structure
