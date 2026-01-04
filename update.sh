@@ -155,9 +155,21 @@ update_skill() {
     fi
 
     if [ "$DRY_RUN" = false ] && [ -f "$skill_dir/package.json" ]; then
-        if command -v npm >/dev/null 2>&1; then
-            print_verbose "Updating npm dependencies for skill: $skill"
-            (cd "$skill_dir" && npm install --silent 2>/dev/null) || true
+        # Detect available package manager
+        if command -v bun >/dev/null 2>&1; then
+            PM="bun install"
+        elif command -v pnpm >/dev/null 2>&1; then
+            PM="pnpm install"
+        elif command -v yarn >/dev/null 2>&1; then
+            PM="yarn install"
+        elif command -v npm >/dev/null 2>&1; then
+            PM="npm install"
+        else
+            PM=""
+        fi
+        if [ -n "$PM" ]; then
+            print_verbose "Updating dependencies for skill: $skill (using ${PM%% *})"
+            (cd "$skill_dir" && $PM --silent 2>/dev/null) || true
         fi
     fi
 }

@@ -52,11 +52,11 @@ active_tools=$(echo "$input" | jq -r '.active_tools[]? // ""' 2>/dev/null)
 activity_icon=""
 if echo "$active_tools" | grep -q "Bash" 2>/dev/null; then
     # Check what specific bash command is running
-    if echo "$current_activity" | grep -E "npm run dev|yarn dev|pnpm dev" >/dev/null 2>&1; then
+    if echo "$current_activity" | grep -E "npm run dev|yarn dev|pnpm dev|bun dev" >/dev/null 2>&1; then
         activity_icon=" [dev]"
-    elif echo "$current_activity" | grep -E "npm run build|yarn build|pnpm build" >/dev/null 2>&1; then
+    elif echo "$current_activity" | grep -E "npm run build|yarn build|pnpm build|bun build" >/dev/null 2>&1; then
         activity_icon=" [build]"
-    elif echo "$current_activity" | grep -E "npm test|yarn test|pytest" >/dev/null 2>&1; then
+    elif echo "$current_activity" | grep -E "npm test|yarn test|pnpm test|bun test|pytest" >/dev/null 2>&1; then
         activity_icon=" [test]"
     elif echo "$current_activity" | grep -E "git" >/dev/null 2>&1; then
         activity_icon=" [git]"

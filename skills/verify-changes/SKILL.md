@@ -34,14 +34,34 @@ After making code changes, this skill runs comprehensive verification to catch i
    - Test the UI with Playwright or manually
    - Verify the UX feels right
 
+## Package Manager Detection
+
+Before running commands, detect the project's package manager:
+
+```bash
+# Detect package manager from lockfile
+if [ -f "bun.lockb" ]; then
+    PM="bun"
+elif [ -f "pnpm-lock.yaml" ]; then
+    PM="pnpm"
+elif [ -f "yarn.lock" ]; then
+    PM="yarn"
+else
+    PM="npm"
+fi
+```
+
+Use `$PM run <script>` for all package.json script invocations.
+
 ## Execution by Project Type
 
 ### TypeScript/Node
 ```bash
-pnpm run typecheck 2>&1 | head -50
-pnpm run lint 2>&1 | head -50
-pnpm run test 2>&1 | head -100
-pnpm run build 2>&1 | head -50
+# Use detected package manager (PM variable)
+$PM run typecheck 2>&1 | head -50
+$PM run lint 2>&1 | head -50
+$PM run test 2>&1 | head -100
+$PM run build 2>&1 | head -50
 ```
 
 ### Python

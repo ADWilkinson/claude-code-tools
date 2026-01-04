@@ -108,9 +108,20 @@ Fix all issues found. Group by category and commit atomically.
 
 ### After each category:
 ```bash
+# Detect package manager from lockfile
+if [ -f "bun.lockb" ]; then
+    PM="bun"
+elif [ -f "pnpm-lock.yaml" ]; then
+    PM="pnpm"
+elif [ -f "yarn.lock" ]; then
+    PM="yarn"
+else
+    PM="npm"
+fi
+
 # Verify nothing broke
-npm run build 2>/dev/null || yarn build 2>/dev/null || pnpm build 2>/dev/null || true
-npm test 2>/dev/null || yarn test 2>/dev/null || pnpm test 2>/dev/null || true
+$PM run build 2>/dev/null || true
+$PM run test 2>/dev/null || true
 ```
 
 If tests fail after a fix, immediately revert that specific change and continue.

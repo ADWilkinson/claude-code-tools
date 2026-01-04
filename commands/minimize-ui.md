@@ -97,9 +97,20 @@ Options:
 
 **Check if app is runnable:**
 ```bash
+# Detect package manager from lockfile
+if [ -f "bun.lockb" ]; then
+    PM="bun"
+elif [ -f "pnpm-lock.yaml" ]; then
+    PM="pnpm"
+elif [ -f "yarn.lock" ]; then
+    PM="yarn"
+else
+    PM="npm"
+fi
+
 # Look for dev server capability
 DEV_SCRIPT=$(cat package.json 2>/dev/null | grep -o '"dev": "[^"]*"' | cut -d'"' -f4)
-[ -n "$DEV_SCRIPT" ] && echo "Found dev script: $DEV_SCRIPT"
+[ -n "$DEV_SCRIPT" ] && echo "Found dev script: $DEV_SCRIPT (using $PM)"
 ```
 
 **If runnable and user chose option 3 (Full autonomous audit):**
@@ -111,7 +122,7 @@ DEV_SCRIPT=$(cat package.json 2>/dev/null | grep -o '"dev": "[^"]*"' | cut -d'"'
 
 2. **Start dev server in background:**
    ```bash
-   npm run dev > .minimize-ui/dev.log 2>&1 &
+   $PM run dev > .minimize-ui/dev.log 2>&1 &
    DEV_PID=$!
    echo "Started dev server (PID: $DEV_PID)"
 
@@ -322,7 +333,7 @@ Only after removal/combination/hiding, apply polish:
 
 1. **Run dev server again:**
    ```bash
-   npm run dev > .minimize-ui/dev.log 2>&1 &
+   $PM run dev > .minimize-ui/dev.log 2>&1 &
    DEV_PID=$!
    # Wait for ready...
    ```

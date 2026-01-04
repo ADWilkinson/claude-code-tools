@@ -58,7 +58,7 @@ echo
 if [ "$DRY_RUN" = true ]; then
     echo -e "${YELLOW}[DRY RUN]${NC} Would create $SKILL_DIR/scripts"
     echo -e "${YELLOW}[DRY RUN]${NC} Would copy SKILL.md and scripts/linear.ts"
-    echo -e "${YELLOW}[DRY RUN]${NC} Would install @linear/sdk (if npm is available)"
+    echo -e "${YELLOW}[DRY RUN]${NC} Would install @linear/sdk (using available package manager)"
     exit 0
 fi
 
@@ -72,15 +72,32 @@ cp "$SCRIPT_DIR/SKILL.md" "$SKILL_DIR/"
 cp "$SCRIPT_DIR/scripts/linear.ts" "$SKILL_DIR/scripts/"
 chmod +x "$SKILL_DIR/scripts/linear.ts"
 
-# Install npm dependency
-if command -v npm >/dev/null 2>&1; then
-    echo "Installing @linear/sdk..."
-    if [ ! -f "$SKILL_DIR/package.json" ]; then
-        (cd "$SKILL_DIR" && npm init -y > /dev/null 2>&1)
-    fi
-    (cd "$SKILL_DIR" && npm install @linear/sdk > /dev/null 2>&1) || true
+# Detect available package manager
+if command -v bun >/dev/null 2>&1; then
+    PM="bun"
+    PM_INSTALL="bun add"
+elif command -v pnpm >/dev/null 2>&1; then
+    PM="pnpm"
+    PM_INSTALL="pnpm add"
+elif command -v yarn >/dev/null 2>&1; then
+    PM="yarn"
+    PM_INSTALL="yarn add"
+elif command -v npm >/dev/null 2>&1; then
+    PM="npm"
+    PM_INSTALL="npm install"
 else
-    echo -e "${YELLOW}!${NC} npm not found - skipping @linear/sdk install"
+    PM=""
+fi
+
+# Install dependency
+if [ -n "$PM" ]; then
+    echo "Installing @linear/sdk using $PM..."
+    if [ ! -f "$SKILL_DIR/package.json" ]; then
+        (cd "$SKILL_DIR" && $PM init -y > /dev/null 2>&1) || (cd "$SKILL_DIR" && npm init -y > /dev/null 2>&1)
+    fi
+    (cd "$SKILL_DIR" && $PM_INSTALL @linear/sdk > /dev/null 2>&1) || true
+else
+    echo -e "${YELLOW}!${NC} No package manager found - skipping @linear/sdk install"
     echo "Install later with: (cd \"$SKILL_DIR\" && npm install @linear/sdk)"
 fi
 

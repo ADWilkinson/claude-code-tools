@@ -14,7 +14,7 @@ cd claude-code-tools
 ./install.sh
 ```
 
-Default install includes agents, commands, skills, hooks, and statusline. The Linear skill will install its dependencies if `npm` is available; hooks still need `settings.json` configuration.
+Default install includes agents, commands, skills, hooks, and statusline. The Linear skill will install its dependencies using your available package manager (bun, pnpm, yarn, or npm); hooks still need `settings.json` configuration.
 
 ## What's Included
 
