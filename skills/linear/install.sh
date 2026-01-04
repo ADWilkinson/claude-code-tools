@@ -10,12 +10,57 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-SKILL_DIR="$HOME/.claude/skills/linear"
+CLAUDE_DIR="${CLAUDE_DIR:-$HOME/.claude}"
+DRY_RUN=false
+
+show_help() {
+    echo "Linear Skill Installer"
+    echo
+    echo "Usage: $0 [options]"
+    echo
+    echo "Options:"
+    echo "  --claude-dir DIR    Custom Claude directory (default: ~/.claude)"
+    echo "  --dry-run           Preview what would be installed"
+    echo "  -h, --help          Show this help message"
+    echo
+}
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --claude-dir)
+            CLAUDE_DIR="$2"
+            shift 2
+            ;;
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        -h|--help)
+            show_help
+            exit 0
+            ;;
+        *)
+            echo -e "${RED}✗${NC} Unknown option: $1"
+            show_help
+            exit 1
+            ;;
+    esac
+done
+
+CLAUDE_DIR="${CLAUDE_DIR/#\~/$HOME}"
+SKILL_DIR="$CLAUDE_DIR/skills/linear"
 
 echo
 echo "Linear Skill Installer"
 echo "======================"
 echo
+
+if [ "$DRY_RUN" = true ]; then
+    echo -e "${YELLOW}[DRY RUN]${NC} Would create $SKILL_DIR/scripts"
+    echo -e "${YELLOW}[DRY RUN]${NC} Would copy SKILL.md and scripts/linear.ts"
+    echo -e "${YELLOW}[DRY RUN]${NC} Would install @linear/sdk (if npm is available)"
+    exit 0
+fi
 
 # Create skill directory
 mkdir -p "$SKILL_DIR/scripts"
@@ -28,8 +73,16 @@ cp "$SCRIPT_DIR/scripts/linear.ts" "$SKILL_DIR/scripts/"
 chmod +x "$SKILL_DIR/scripts/linear.ts"
 
 # Install npm dependency
-echo "Installing @linear/sdk..."
-cd "$SKILL_DIR" && npm init -y > /dev/null 2>&1 && npm install @linear/sdk > /dev/null 2>&1
+if command -v npm >/dev/null 2>&1; then
+    echo "Installing @linear/sdk..."
+    if [ ! -f "$SKILL_DIR/package.json" ]; then
+        (cd "$SKILL_DIR" && npm init -y > /dev/null 2>&1)
+    fi
+    (cd "$SKILL_DIR" && npm install @linear/sdk > /dev/null 2>&1) || true
+else
+    echo -e "${YELLOW}!${NC} npm not found - skipping @linear/sdk install"
+    echo "Install later with: (cd \"$SKILL_DIR\" && npm install @linear/sdk)"
+fi
 
 echo -e "${GREEN}✓${NC} Skill installed to $SKILL_DIR"
 

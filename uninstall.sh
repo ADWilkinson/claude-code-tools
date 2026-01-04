@@ -2,7 +2,7 @@
 
 # Claude Code Tools Uninstall Script
 # Author: Andrew Wilkinson (github.com/ADWilkinson)
-# Removes installed agents, commands, skills, and statusline
+# Removes installed agents, commands, skills, hooks, and statusline
 
 set -e
 
@@ -29,37 +29,20 @@ show_help() {
     echo "Usage: ./uninstall.sh [options]"
     echo
     echo "Options:"
-    echo "  --dry-run    Preview what would be removed without deleting"
-    echo "  --force      Skip confirmation prompt"
-    echo "  -h, --help   Show this help message"
+    echo "  --claude-dir DIR    Custom Claude directory (default: ~/.claude)"
+    echo "  --dry-run           Preview what would be removed without deleting"
+    echo "  --force             Skip confirmation prompt"
+    echo "  -h, --help          Show this help message"
     echo
 }
-
-# Agents to remove
-AGENTS=(
-    "backend-developer.md"
-    "blockchain-specialist.md"
-    "database-manager.md"
-    "devops-engineer.md"
-    "extension-developer.md"
-    "firebase-specialist.md"
-    "frontend-developer.md"
-    "indexer-developer.md"
-    "mobile-developer.md"
-    "performance-engineer.md"
-    "testing-specialist.md"
-    "zk-specialist.md"
-)
-
-# Commands to remove
-COMMANDS=(
-    "repo-polish.md"
-    "update-claudes.md"
-)
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
+        --claude-dir)
+            CLAUDE_DIR="$2"
+            shift 2
+            ;;
         --dry-run)
             DRY_RUN=true
             shift
@@ -80,6 +63,8 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+CLAUDE_DIR="${CLAUDE_DIR/#\~/$HOME}"
+
 echo
 echo -e "${BOLD}Claude Code Tools Uninstaller${NC}"
 echo "=============================="
@@ -90,10 +75,40 @@ if [ ! -d "$CLAUDE_DIR" ]; then
     exit 1
 fi
 
+AGENTS=()
+COMMANDS=()
+SKILLS=()
+HOOKS=()
+
+if [ -d "agents" ]; then
+    for agent_file in agents/*.md; do
+        [ -f "$agent_file" ] && AGENTS+=("$(basename "$agent_file")")
+    done
+fi
+
+if [ -d "commands" ]; then
+    for command_file in commands/*.md; do
+        [ -f "$command_file" ] && COMMANDS+=("$(basename "$command_file")")
+    done
+fi
+
+if [ -d "skills" ]; then
+    for skill_dir in skills/*; do
+        [ -d "$skill_dir" ] && SKILLS+=("$(basename "$skill_dir")")
+    done
+fi
+
+if [ -d "hooks" ]; then
+    for hook_file in hooks/*; do
+        [ -f "$hook_file" ] && HOOKS+=("$(basename "$hook_file")")
+    done
+fi
+
 # Count what will be removed
 agent_count=0
 command_count=0
 skill_count=0
+hook_count=0
 statusline_exists=false
 
 for agent in "${AGENTS[@]}"; do
@@ -104,10 +119,17 @@ for cmd in "${COMMANDS[@]}"; do
     [ -f "$CLAUDE_DIR/commands/$cmd" ] && ((command_count++))
 done
 
-[ -d "$CLAUDE_DIR/skills/linear" ] && skill_count=1
+for skill in "${SKILLS[@]}"; do
+    [ -d "$CLAUDE_DIR/skills/$skill" ] && ((skill_count++))
+done
+
+for hook in "${HOOKS[@]}"; do
+    [ -f "$CLAUDE_DIR/hooks/$hook" ] && ((hook_count++))
+done
+
 [ -f "$CLAUDE_DIR/flying-dutchman-statusline.sh" ] && statusline_exists=true
 
-total=$((agent_count + command_count + skill_count))
+total=$((agent_count + command_count + skill_count + hook_count))
 [ "$statusline_exists" = true ] && ((total++))
 
 if [ $total -eq 0 ]; then
@@ -119,7 +141,8 @@ fi
 echo "Found:"
 [ $agent_count -gt 0 ] && echo "  • $agent_count agents"
 [ $command_count -gt 0 ] && echo "  • $command_count commands"
-[ $skill_count -gt 0 ] && echo "  • $skill_count skill (Linear)"
+[ $skill_count -gt 0 ] && echo "  • $skill_count skills"
+[ $hook_count -gt 0 ] && echo "  • $hook_count hooks"
 [ "$statusline_exists" = true ] && echo "  • Flying Dutchman statusline"
 echo
 
@@ -172,12 +195,31 @@ fi
 # Remove skills
 if [ $skill_count -gt 0 ]; then
     print_status "Removing skills..."
-    if [ "$DRY_RUN" = true ]; then
-        echo "  Would remove: skills/linear/"
-    else
-        rm -rf "$CLAUDE_DIR/skills/linear"
-        echo "  Removed: skills/linear/"
-    fi
+    for skill in "${SKILLS[@]}"; do
+        if [ -d "$CLAUDE_DIR/skills/$skill" ]; then
+            if [ "$DRY_RUN" = true ]; then
+                echo "  Would remove: skills/$skill/"
+            else
+                rm -rf "$CLAUDE_DIR/skills/$skill"
+                echo "  Removed: skills/$skill/"
+            fi
+        fi
+    done
+fi
+
+# Remove hooks
+if [ $hook_count -gt 0 ]; then
+    print_status "Removing hooks..."
+    for hook in "${HOOKS[@]}"; do
+        if [ -f "$CLAUDE_DIR/hooks/$hook" ]; then
+            if [ "$DRY_RUN" = true ]; then
+                echo "  Would remove: hooks/$hook"
+            else
+                rm -f "$CLAUDE_DIR/hooks/$hook"
+                echo "  Removed: hooks/$hook"
+            fi
+        fi
+    done
 fi
 
 # Remove statusline
@@ -189,7 +231,7 @@ if [ "$statusline_exists" = true ]; then
         rm -f "$CLAUDE_DIR/flying-dutchman-statusline.sh"
         echo "  Removed: flying-dutchman-statusline.sh"
     fi
-    print_warning "Remember to remove 'statusline' from ~/.claude/settings.json"
+    print_warning "Remember to remove 'statusline' from $CLAUDE_DIR/settings.json"
 fi
 
 echo

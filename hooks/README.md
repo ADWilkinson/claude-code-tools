@@ -2,6 +2,8 @@
 
 Hooks execute shell commands at specific points in Claude Code's lifecycle. They're useful for automating quality checks, formatting, and verification.
 
+If you install via `./install.sh`, the hook scripts are copied into `~/.claude/hooks/` but still need to be enabled in `settings.json`.
+
 ## Available Hooks
 
 ### auto-format.sh
@@ -74,4 +76,3 @@ Your hook can:
 - Return JSON with `"message"` to show feedback
 - Return `"decision": "block"` to prevent tool execution (PreToolUse only)
 - Exit silently (exit 0) for no-op
-

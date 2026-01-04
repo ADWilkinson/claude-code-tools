@@ -14,6 +14,8 @@ cd claude-code-tools
 ./install.sh
 ```
 
+Default install includes agents, commands, skills, hooks, and statusline. The Linear skill will install its dependencies if `npm` is available; hooks still need `settings.json` configuration.
+
 ## What's Included
 
 ### Agents (16)
@@ -89,7 +91,7 @@ Shell scripts that run at specific points in Claude Code's lifecycle:
 
 - `auto-format.sh` - PostToolUse hook that runs formatters after Claude writes code. Supports Prettier, Ruff, gofmt, rustfmt, forge fmt.
 
-See [hooks/README.md](hooks/README.md) for setup instructions.
+Install copies hooks to `~/.claude/hooks`, but you still need to add them to `settings.json`. See [hooks/README.md](hooks/README.md) for setup instructions.
 
 ## Installation Options
 
@@ -105,6 +107,18 @@ See [hooks/README.md](hooks/README.md) for setup instructions.
 
 # Install only commands
 ./install.sh --commands-only
+
+# Install only skills
+./install.sh --skills-only
+
+# Install only hooks
+./install.sh --hooks-only
+
+# Skip skills
+./install.sh --no-skills
+
+# Skip hooks
+./install.sh --no-hooks
 
 # Skip statusline
 ./install.sh --no-statusline
@@ -125,7 +139,12 @@ Pull the latest versions without re-cloning:
 
 # Preview what would be updated
 ./update.sh --dry-run
+
+# Custom Claude directory
+./update.sh --claude-dir /path/to/.claude
 ```
+
+Agents and commands are always refreshed; skills, hooks, and statusline are updated when installed.
 
 ## Uninstall
 
@@ -139,6 +158,9 @@ Remove all installed tools:
 
 # Skip confirmation
 ./uninstall.sh --force
+
+# Custom Claude directory
+./uninstall.sh --claude-dir /path/to/.claude
 ```
 
 ## Manual Installation
@@ -153,6 +175,16 @@ cp agents/*.md ~/.claude/agents/
 ```bash
 mkdir -p ~/.claude/commands
 cp commands/*.md ~/.claude/commands/
+```
+
+### Skills
+```bash
+# Linear (includes dependencies)
+cd skills/linear && ./install.sh
+
+# verify-changes (just copy the skill file)
+mkdir -p ~/.claude/skills/verify-changes
+cp skills/verify-changes/SKILL.md ~/.claude/skills/verify-changes/
 ```
 
 ### Statusline
