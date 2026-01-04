@@ -298,7 +298,7 @@ show_summary() {
     echo
     echo -e "${BOLD}Usage:${NC}"
     echo "  Agents are auto-invoked by Claude Code via the Task tool"
-    echo "  Commands: /repo-polish, /update-claudes, /minimize-ui"
+    echo "  Commands: /repo-polish, /update-claudes, /minimize-ui, /generate-precommit-hooks"
     echo
 }
 
