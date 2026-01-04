@@ -85,13 +85,20 @@ Custom statusline showing:
 - Cumulative cost tracking
 - Code diff stats (+/- lines)
 
-### Hooks (1)
+### Hooks (2)
 
 Shell scripts that run at specific points in Claude Code's lifecycle:
 
 - `auto-format.sh` - PostToolUse hook that runs formatters after Claude writes code. Supports Prettier, Ruff, gofmt, rustfmt, forge fmt.
+- `constraint-persistence.sh` - UserPromptSubmit hook that detects when you set rules ("from now on", "always do X") and prompts Claude to save them to CLAUDE.md.
 
 Install copies hooks to `~/.claude/hooks`, but you still need to add them to `settings.json`. See [hooks/README.md](hooks/README.md) for setup instructions.
+
+### Rules (1)
+
+Reusable rule files for `~/.claude/rules/`:
+
+- `code-quality.md` - Standards for reading before writing, keeping it simple, measurement over estimation.
 
 ## Installation Options
 
@@ -198,9 +205,16 @@ chmod +x ~/.claude/flying-dutchman-statusline.sh
 ### Hooks
 ```bash
 mkdir -p ~/.claude/hooks
-cp hooks/auto-format.sh ~/.claude/hooks/
-chmod +x ~/.claude/hooks/auto-format.sh
+cp hooks/*.sh ~/.claude/hooks/
+chmod +x ~/.claude/hooks/*.sh
 # Add to ~/.claude/settings.json under "hooks" - see hooks/README.md
+```
+
+### Rules
+```bash
+mkdir -p ~/.claude/rules
+cp rules/*.md ~/.claude/rules/
+# Reference in ~/.claude/CLAUDE.md: @~/.claude/rules/code-quality.md
 ```
 
 ## Agent Structure

@@ -16,13 +16,24 @@ Automatically formats code after Claude writes or edits files. Detects project t
 - **Go**: gofmt
 - **Rust**: rustfmt
 
+### constraint-persistence.sh
+
+Detects when users set persistent constraints (e.g., "from now on always use X") and prompts Claude to suggest saving the rule to CLAUDE.md.
+
+Triggers on phrases like:
+- "from now on"
+- "always do" / "never do"
+- "don't ever" / "stop doing" / "start doing"
+- "going forward"
+
 ## Installation
 
 ```bash
 # Copy to your Claude hooks directory
 mkdir -p ~/.claude/hooks
 cp hooks/auto-format.sh ~/.claude/hooks/
-chmod +x ~/.claude/hooks/auto-format.sh
+cp hooks/constraint-persistence.sh ~/.claude/hooks/
+chmod +x ~/.claude/hooks/*.sh
 ```
 
 Then add to your `~/.claude/settings.json`:
@@ -37,6 +48,16 @@ Then add to your `~/.claude/settings.json`:
           {
             "type": "command",
             "command": "~/.claude/hooks/auto-format.sh"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/constraint-persistence.sh"
           }
         ]
       }
