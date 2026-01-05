@@ -6,15 +6,55 @@ allowed-tools:
   - Bash
   - Read
   - Write
+  - mcp__linear__list_issues
+  - mcp__linear__get_issue
+  - mcp__linear__create_issue
+  - mcp__linear__update_issue
+  - mcp__linear__list_comments
+  - mcp__linear__create_comment
+  - mcp__linear__list_teams
+  - mcp__linear__get_user
 ---
 
 # Linear Task Manager
 
 Simple Linear integration for daily task management.
 
-## Setup Check
+## Tool Selection Strategy
 
-Before any Linear operation, verify the API key exists:
+**IMPORTANT: Prefer Linear MCP tools when available.**
+
+1. **Check for MCP first**: If `mcp__linear__*` tools are available, use them directly
+2. **Fall back to CLI**: Only use the bash script if MCP tools are unavailable
+
+### Using MCP Tools (Preferred)
+
+When MCP tools are available, use them directly:
+
+```
+# List my tasks
+mcp__linear__list_issues with assignee="me", state type != "completed" or "canceled"
+
+# Get issue details
+mcp__linear__get_issue with id="ISSUE-ID"
+
+# Create issue
+mcp__linear__create_issue with title, team, assignee="me"
+
+# Update issue state
+mcp__linear__update_issue with id, state="Done" or "In Progress"
+
+# Add comment
+mcp__linear__create_comment with issueId, body
+```
+
+### Using CLI Fallback
+
+Only use when MCP is unavailable.
+
+## Setup (CLI Fallback Only)
+
+The CLI requires an API key. Check if configured:
 
 ```bash
 [ -n "$LINEAR_API_KEY" ] && echo "Linear configured" || echo "Set LINEAR_API_KEY in your shell profile"
@@ -27,7 +67,7 @@ export LINEAR_API_KEY="lin_api_..."
 
 Get key from: Linear → Settings → Security & access → Personal API keys
 
-## Operations
+## CLI Operations (Fallback)
 
 ### View My Tasks
 
