@@ -46,7 +46,6 @@ show_help() {
 DEFAULT_AGENTS=(
     "backend-developer.md"
     "blockchain-specialist.md"
-    "code-simplifier.md"
     "database-manager.md"
     "debugger.md"
     "devops-engineer.md"
@@ -59,7 +58,6 @@ DEFAULT_AGENTS=(
     "performance-engineer.md"
     "refactoring-specialist.md"
     "testing-specialist.md"
-    "zk-specialist.md"
 )
 
 DEFAULT_COMMANDS=(

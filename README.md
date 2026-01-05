@@ -20,24 +20,24 @@ Default install includes agents, commands, skills, hooks, and statusline. The Li
 
 ### Agents (14)
 
-Specialized subagents invoked automatically by Claude Code's Task tool:
+Specialized subagents invoked automatically by Claude Code's Task tool. **Framework-agnostic** - they detect your stack and adapt.
 
 | Agent | Description |
 |-------|-------------|
-| `backend-developer` | Express/Node.js, REST APIs, authentication, webhooks |
+| `frontend-developer` | React, Vue, Angular, Svelte, SolidJS - any modern framework |
+| `backend-developer` | Node, Python, Go, Rust, Ruby - REST/GraphQL APIs |
+| `database-manager` | SQL & NoSQL, Prisma, Drizzle, SQLAlchemy, GORM |
+| `mobile-developer` | React Native, Flutter, Swift, Kotlin, cross-platform |
 | `blockchain-specialist` | Solidity, Wagmi, multi-chain, gas optimization |
-| `database-manager` | PostgreSQL, Prisma ORM, query optimization |
-| `debugger` | Root cause analysis, error tracing, systematic debugging |
-| `devops-engineer` | CI/CD, Docker, GitHub Actions, cloud deployment |
-| `extension-developer` | Chrome Manifest V3, service workers, messaging |
-| `firebase-specialist` | Firestore, Cloud Functions, FCM, security rules |
-| `frontend-developer` | React, Next.js, TanStack Query, Tailwind |
 | `indexer-developer` | Envio, The Graph, GraphQL, event handlers |
+| `devops-engineer` | CI/CD, Docker, GitHub Actions, cloud deployment |
+| `firebase-specialist` | Firestore, Cloud Functions, FCM, security rules |
+| `extension-developer` | Chrome Manifest V3, service workers, messaging |
 | `mcp-developer` | MCP servers, tool definitions, LLM integrations |
-| `mobile-developer` | React Native, Expo, biometrics, push notifications |
+| `testing-specialist` | Jest, Vitest, Playwright, pytest - any test framework |
 | `performance-engineer` | Profiling, caching, load testing, optimization |
+| `debugger` | Root cause analysis, error tracing, systematic debugging |
 | `refactoring-specialist` | Code smells, simplification, safe transformations |
-| `testing-specialist` | Jest, Playwright, E2E, mocking strategies |
 
 All agents use **opus** model for maximum capability.
 
