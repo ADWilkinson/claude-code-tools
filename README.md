@@ -68,7 +68,7 @@ Then just talk naturally: "show my tasks", "search rebrand issues", "mark ENG-12
 
 **verify-changes**: Auto-detects project type and runs appropriate verification (typecheck, lint, test, build). Provides the feedback loop that 2-3x code quality.
 
-### Commands (4)
+### Commands (5)
 
 Slash commands for common workflows:
 
@@ -76,6 +76,7 @@ Slash commands for common workflows:
 - `/update-claudes` - Generates CLAUDE.md files throughout your project for AI context.
 - `/minimize-ui` - Systematic UI minimalization through ruthless reduction. 7-phase workflow that removes before polishing.
 - `/generate-precommit-hooks` - Detect project type and set up appropriate pre-commit hooks (husky, lint-staged, etc.).
+- `/lighthouse` - Run Lighthouse audits and iteratively fix issues until target scores are met. Optimizes performance, accessibility, best practices, and SEO.
 
 ### Statusline
 
