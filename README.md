@@ -41,7 +41,7 @@ Specialized subagents invoked automatically by Claude Code's Task tool. **Framew
 
 All agents use **opus** model for maximum capability.
 
-### Skills (2)
+### Skills (3)
 
 Auto-invoked skills that Claude applies when relevant:
 
@@ -49,6 +49,7 @@ Auto-invoked skills that Claude applies when relevant:
 |-------|---------|-------------|
 | `linear` | "tasks", "issues", "Linear" | Full Linear task management - view, search, create, update issues |
 | `verify-changes` | After implementing features | Run tests, builds, checks to verify code works |
+| `clarify-before-implementing` | Underspecified implementation requests | Ask targeted clarifying questions before coding to avoid wrong work |
 
 **Linear Skill Features:**
 - `my-tasks` / `backlog` / `in-progress` / `team-tasks` - View issues by state
@@ -66,10 +67,11 @@ Then just talk naturally: "show my tasks", "search rebrand issues", "mark ENG-12
 
 **verify-changes**: Auto-detects project type and runs appropriate verification (typecheck, lint, test, build). Provides the feedback loop that 2-3x code quality.
 
-### Commands (5)
+### Commands (6)
 
 Slash commands for common workflows:
 
+- `/deslop` - Remove AI-generated slop from diffs (extra comments, defensive checks, type escapes, console.logs).
 - `/repo-polish` - Fire-and-forget repository cleanup. Creates a branch, fixes issues, opens a PR.
 - `/update-claudes` - Generates CLAUDE.md files throughout your project for AI context.
 - `/minimize-ui` - Systematic UI minimalization through ruthless reduction. 7-phase workflow that removes before polishing.
@@ -191,6 +193,10 @@ cd skills/linear && ./install.sh
 # verify-changes (just copy the skill file)
 mkdir -p ~/.claude/skills/verify-changes
 cp skills/verify-changes/SKILL.md ~/.claude/skills/verify-changes/
+
+# clarify-before-implementing
+mkdir -p ~/.claude/skills/clarify-before-implementing
+cp skills/clarify-before-implementing/SKILL.md ~/.claude/skills/clarify-before-implementing/
 ```
 
 ### Statusline

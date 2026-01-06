@@ -477,7 +477,7 @@ show_summary() {
     echo
     echo -e "${BOLD}Usage:${NC}"
     echo "  Agents are auto-invoked by Claude Code via the Task tool"
-    echo "  Commands: /repo-polish, /update-claudes, /minimize-ui, /generate-precommit-hooks"
+    echo "  Commands: /deslop, /repo-polish, /update-claudes, /minimize-ui, /lighthouse, etc."
     echo "  Skills auto-activate based on your prompt"
     echo "  Hooks require settings.json configuration (see hooks/README.md)"
     echo
