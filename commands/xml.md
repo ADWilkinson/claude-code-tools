@@ -1,0 +1,79 @@
+# Convert Prompt to XML
+
+Transform a raw prompt into a well-structured XML prompt for optimal Claude performance.
+
+## Usage
+
+```
+/xml <raw prompt text>
+```
+
+## Process
+
+1. **Analyze the input prompt** to identify:
+   - Core task/goal
+   - Context needed
+   - Constraints/requirements
+   - Expected output format
+   - Any examples or references
+
+2. **Structure as XML** using these tags as appropriate:
+
+```xml
+<task>
+  Clear, imperative statement of what to do
+</task>
+
+<context>
+  Background information needed to complete the task
+</context>
+
+<requirements>
+  - Specific constraints
+  - Format requirements
+  - Quality criteria
+</requirements>
+
+<examples>
+  <example>
+    <input>Sample input</input>
+    <output>Expected output</output>
+  </example>
+</examples>
+
+<output_format>
+  How the response should be structured
+</output_format>
+```
+
+3. **Apply XML best practices**:
+   - Use semantic tag names (not generic like `<info>`)
+   - Keep nesting shallow (2-3 levels max)
+   - Put most important context first
+   - Use attributes sparingly, prefer nested elements
+   - Include `<thinking>` or `<scratchpad>` tags for complex reasoning tasks
+
+## Output
+
+Return the XML prompt directly in a code block. No explanation needed - just the optimized prompt.
+
+## Example
+
+Input: `make a function that validates emails and returns true/false`
+
+Output:
+```xml
+<task>
+  Write a function that validates email addresses.
+</task>
+
+<requirements>
+  - Return boolean (true for valid, false for invalid)
+  - Handle common edge cases (empty string, missing @, invalid TLD)
+  - No external dependencies
+</requirements>
+
+<output_format>
+  Return only the function code, no explanation.
+</output_format>
+```
