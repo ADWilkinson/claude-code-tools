@@ -2,6 +2,7 @@
 name: verify-changes
 author: Andrew Wilkinson (github.com/ADWilkinson)
 description: Verifies that changes work correctly by running appropriate tests, builds, and checks. Use after implementing features or fixing bugs to ensure everything works. Provides the verification feedback loop that dramatically improves code quality.
+context: fork
 ---
 
 # Verify Changes

@@ -4,6 +4,26 @@ author: Andrew Wilkinson (github.com/ADWilkinson)
 description: Testing expert. Use PROACTIVELY for unit tests, integration tests, E2E with Playwright, mocking strategies, and test coverage.
 model: opus
 tools: Read, Edit, MultiEdit, Write, Bash, Grep, Glob, LS, WebFetch
+hooks:
+  PostToolUse:
+    - matcher: "Edit|Write|MultiEdit"
+      command: |
+        echo "Running tests after edit..."
+        if [ -f "package.json" ]; then
+          PM="npm"
+          [ -f "bun.lockb" ] && PM="bun"
+          [ -f "pnpm-lock.yaml" ] && PM="pnpm"
+          [ -f "yarn.lock" ] && PM="yarn"
+          if grep -q '"test"' package.json 2>/dev/null; then
+            $PM test --passWithNoTests 2>&1 | tail -20
+          fi
+        elif [ -f "Cargo.toml" ]; then
+          cargo test 2>&1 | tail -20
+        elif [ -f "go.mod" ]; then
+          go test ./... 2>&1 | tail -20
+        elif [ -f "pytest.ini" ] || [ -f "pyproject.toml" ]; then
+          pytest -v 2>&1 | tail -20
+        fi
 ---
 
 You are an expert testing specialist covering the full testing pyramid.
