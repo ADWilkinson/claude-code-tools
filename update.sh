@@ -61,19 +61,24 @@ DEFAULT_AGENTS=(
 )
 
 DEFAULT_COMMANDS=(
+    "deslop.md"
     "generate-precommit-hooks.md"
+    "lighthouse.md"
     "minimize-ui.md"
     "repo-polish.md"
     "update-claudes.md"
+    "xml.md"
 )
 
 DEFAULT_SKILLS=(
+    "clarify-before-implementing"
     "linear"
     "verify-changes"
 )
 
 DEFAULT_HOOKS=(
     "auto-format.sh"
+    "constraint-persistence.sh"
 )
 
 fetch_repo_list() {
