@@ -6,10 +6,7 @@
     "name": "Andrew Wilkinson",
     "url": "https://x.com/davyjones0x"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/ADWilkinson/claude-code-tools"
-  },
+  "repository": "https://github.com/ADWilkinson/claude-code-tools",
   "license": "MIT",
   "homepage": "https://github.com/ADWilkinson/claude-code-tools"
 }
