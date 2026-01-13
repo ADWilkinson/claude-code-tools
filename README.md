@@ -8,13 +8,29 @@ Custom agents, commands, skills, hooks, and statusline for [Claude Code](https:/
 
 ## Quick Install
 
+### Option 1: As a Plugin (Recommended)
+
+```bash
+# Install directly from GitHub
+claude /plugin install https://github.com/ADWilkinson/claude-code-tools
+
+# Or load locally for development
+claude --plugin-dir ./claude-code-tools
+```
+
+Commands will be namespaced as `/cct:deslop`, `/cct:lighthouse`, etc.
+
+### Option 2: Via Install Script (Short Command Names)
+
 ```bash
 git clone https://github.com/ADWilkinson/claude-code-tools.git
 cd claude-code-tools
 ./install.sh
 ```
 
-Default install includes agents, commands, skills, hooks, and statusline. The Linear skill will install its dependencies using your available package manager (bun, pnpm, yarn, or npm); hooks still need `settings.json` configuration.
+This copies files to `~/.claude/` for short command names like `/deslop`, `/lighthouse`.
+
+Default install includes agents, commands, skills, hooks, and statusline. The Linear skill will install its dependencies using your available package manager (bun, pnpm, yarn, or npm); hooks still need `settings.json` configuration when using the install script.
 
 ## What's Included
 
@@ -67,7 +83,7 @@ Then just talk naturally: "show my tasks", "search rebrand issues", "mark ENG-12
 
 **verify-changes**: Auto-detects project type and runs appropriate verification (typecheck, lint, test, build). Provides the feedback loop that 2-3x code quality.
 
-### Commands (6)
+### Commands (7)
 
 Slash commands for common workflows:
 
@@ -77,6 +93,7 @@ Slash commands for common workflows:
 - `/minimize-ui` - Systematic UI minimalization through ruthless reduction. 7-phase workflow that removes before polishing.
 - `/generate-precommit-hooks` - Detect project type and set up appropriate pre-commit hooks (husky, lint-staged, etc.).
 - `/lighthouse` - Run Lighthouse audits and iteratively fix issues until target scores are met. Optimizes performance, accessibility, best practices, and SEO.
+- `/xml` - Convert prompts to XML format for structured Claude interactions.
 
 ### Statusline
 

@@ -1,0 +1,15 @@
+{
+  "name": "cct",
+  "description": "14 specialized agents, 7 slash commands, 3 skills, and 2 hooks for Claude Code. Includes frontend/backend/blockchain specialists, Linear integration, auto-formatting, and more.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Andrew Wilkinson",
+    "url": "https://x.com/davyjones0x"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ADWilkinson/claude-code-tools"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/ADWilkinson/claude-code-tools"
+}
