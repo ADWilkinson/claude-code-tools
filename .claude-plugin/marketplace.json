@@ -1,0 +1,23 @@
+{
+  "name": "cct",
+  "owner": {
+    "name": "Andrew Wilkinson",
+    "email": "andrew@adwilkinson.dev"
+  },
+  "metadata": {
+    "description": "14 specialized agents, 7 slash commands, 3 skills, and 2 hooks for Claude Code"
+  },
+  "plugins": [
+    {
+      "name": "cct",
+      "source": "./",
+      "description": "14 specialized agents, 7 slash commands, 3 skills, and 2 hooks for Claude Code. Includes frontend/backend/blockchain specialists, Linear integration, auto-formatting, and more.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Andrew Wilkinson"
+      },
+      "category": "productivity",
+      "tags": ["agents", "commands", "skills", "hooks", "developer-tools"]
+    }
+  ]
+}
