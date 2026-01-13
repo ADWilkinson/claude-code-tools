@@ -8,17 +8,15 @@ Custom agents, commands, skills, hooks, and statusline for [Claude Code](https:/
 
 ## Quick Install
 
-### Option 1: As a Plugin (Recommended)
+### Option 1: As a Plugin
 
 ```bash
-# Install directly from GitHub
-claude /plugin install https://github.com/ADWilkinson/claude-code-tools
-
-# Or load locally for development
+# Clone and load as plugin
+git clone https://github.com/ADWilkinson/claude-code-tools.git
 claude --plugin-dir ./claude-code-tools
 ```
 
-Commands will be namespaced as `/cct:deslop`, `/cct:lighthouse`, etc.
+Commands will be namespaced as `/cct:deslop`, `/cct:lighthouse`, etc. Hooks auto-configure when loaded as a plugin.
 
 ### Option 2: Via Install Script (Short Command Names)
 
