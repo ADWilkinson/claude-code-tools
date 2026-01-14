@@ -3,7 +3,7 @@
 # Reads JSON from stdin, outputs reminder context to stdout
 
 input=$(cat)
-prompt=$(echo "$input" | jq -r '.prompt // ""')
+prompt=$(echo "$input" | jq -r '.prompt // ""' 2>/dev/null)
 
 # Constraint persistence detection - prompt Claude to save rules
 if echo "$prompt" | grep -qiE "from now on|always do|never do|don't ever|stop doing|start doing|going forward"; then
