@@ -111,14 +111,40 @@ Check for these signals:
 
 ## Quality Checklist
 
+### Code Quality
 - [ ] Strict TypeScript, no `any`
 - [ ] Loading and error states handled
-- [ ] Responsive at all breakpoints
-- [ ] Keyboard accessible
-- [ ] Proper ARIA labels where needed
 - [ ] No unnecessary re-renders
 - [ ] Form validation with user feedback
 - [ ] Follows project's existing patterns
+
+### Accessibility
+- [ ] All interactive elements have visible `:focus-visible` states
+- [ ] Touch targets ≥44px mobile, ≥24px desktop
+- [ ] Form inputs have explicit `<label>` elements
+- [ ] Input font-size ≥16px on mobile (prevents iOS zoom)
+- [ ] Proper ARIA labels where needed
+- [ ] Keyboard accessible (tab order, no mouse-only interactions)
+
+### State & UX
+- [ ] App state reflected in URL (filters, tabs, pagination)
+- [ ] Destructive actions require confirmation dialog
+- [ ] Empty states have one clear next action
+- [ ] Errors appear adjacent to their fields, not just in toast
+- [ ] Responsive at all breakpoints
+
+### Performance
+- [ ] Loading spinners have 300-500ms minimum duration (no flicker)
+- [ ] Long lists virtualized (>50 items)
+- [ ] No `transition: all` - explicit properties only
+- [ ] Images lazy-loaded below fold
+- [ ] Critical fonts preloaded
+
+### Constraints (Never Violate)
+- [ ] No animation unless explicitly requested
+- [ ] One accent color per view maximum
+- [ ] No mixed component primitive systems (pick one: Radix OR Headless UI OR React Aria)
+- [ ] No arbitrary z-index values (use scale: 10, 20, 30, 40, 50)
 
 ## Handoff Protocol
 

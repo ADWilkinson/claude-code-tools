@@ -206,6 +206,38 @@ After applying fixes:
 5. If not, identify remaining issues and continue fixing
 6. Repeat until target met or max iterations reached
 
+### Iteration Tracking
+
+After each iteration, report progress in this format:
+
+```
+Iteration #2 of 5
+=================
+                    Before → After  (Δ)
+Performance:          65   →   78   (+13)
+Accessibility:        88   →   95   (+7)
+Best Practices:       73   →   85   (+12)
+SEO:                  91   →   100  (+9)
+                    ─────────────────────
+Total:              317   →  358   (+41)
+
+Issues fixed this run:
+  ✓ Added aria-label to icon buttons (accessibility)
+  ✓ Enabled source maps (best-practices)
+  ✓ Added meta description (seo)
+
+Remaining issues (by priority):
+  Critical:
+    - render-blocking-resources (performance, -15 pts)
+  Serious:
+    - unused-javascript (performance, -8 pts)
+  Moderate:
+    - image-size-responsive (performance, -3 pts)
+
+Progress: 358/400 (89.5%) | Target: 380/400 (95%)
+Status: CONTINUE (22 points to target)
+```
+
 ## Step 5: Report Results
 
 ### Success Report

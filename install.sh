@@ -6,7 +6,7 @@
 
 set -e
 
-VERSION="1.3.0"
+VERSION="1.4.0"
 
 # Colors
 RED='\033[0;31m'
@@ -28,6 +28,50 @@ INSTALL_COMMANDS=true
 INSTALL_STATUSLINE=true
 INSTALL_SKILLS=true
 INSTALL_HOOKS=true
+DETECTED_PLATFORM=""
+
+# Detect AI coding assistant platform
+detect_platform() {
+    # Check for Claude Code (primary)
+    if [ -d "$HOME/.claude" ]; then
+        DETECTED_PLATFORM="claude"
+        CLAUDE_DIR="$HOME/.claude"
+        return 0
+    fi
+
+    # Check for Cursor
+    if [ -d "$HOME/.cursor" ]; then
+        DETECTED_PLATFORM="cursor"
+        CLAUDE_DIR="$HOME/.cursor"
+        return 0
+    fi
+
+    # Check for Windsurf
+    if [ -d "$HOME/.windsurf" ]; then
+        DETECTED_PLATFORM="windsurf"
+        CLAUDE_DIR="$HOME/.windsurf"
+        return 0
+    fi
+
+    # Check for Cline (VS Code extension)
+    if [ -d "$HOME/.cline" ]; then
+        DETECTED_PLATFORM="cline"
+        CLAUDE_DIR="$HOME/.cline"
+        return 0
+    fi
+
+    # Check for Continue
+    if [ -d "$HOME/.continue" ]; then
+        DETECTED_PLATFORM="continue"
+        CLAUDE_DIR="$HOME/.continue"
+        return 0
+    fi
+
+    # Default to Claude if nothing detected (will create on install)
+    DETECTED_PLATFORM="claude"
+    CLAUDE_DIR="$HOME/.claude"
+    return 1
+}
 
 print_status() { echo -e "${BLUE}→${NC} $1"; }
 print_success() { echo -e "${GREEN}✓${NC} $1"; }
@@ -89,12 +133,34 @@ rollback_installation() {
 }
 
 check_claude_installation() {
+    detect_platform
+
     if [ ! -d "$CLAUDE_DIR" ]; then
-        print_error "Claude Code directory not found at $CLAUDE_DIR"
-        print_error "Install Claude Code first: https://github.com/anthropics/claude-code"
-        exit 1
+        print_warning "No AI coding assistant directory found"
+        print_status "Creating directory at $CLAUDE_DIR"
+        mkdir -p "$CLAUDE_DIR"
     fi
-    print_success "Found Claude Code at $CLAUDE_DIR"
+
+    case "$DETECTED_PLATFORM" in
+        claude)
+            print_success "Detected Claude Code at $CLAUDE_DIR"
+            ;;
+        cursor)
+            print_success "Detected Cursor at $CLAUDE_DIR"
+            ;;
+        windsurf)
+            print_success "Detected Windsurf at $CLAUDE_DIR"
+            ;;
+        cline)
+            print_success "Detected Cline at $CLAUDE_DIR"
+            ;;
+        continue)
+            print_success "Detected Continue at $CLAUDE_DIR"
+            ;;
+        *)
+            print_success "Using $CLAUDE_DIR"
+            ;;
+    esac
 }
 
 create_directories() {
@@ -488,8 +554,15 @@ show_help() {
     echo
     echo "Usage: $0 [OPTIONS]"
     echo
+    echo "Supported platforms (auto-detected):"
+    echo "  - Claude Code (~/.claude)"
+    echo "  - Cursor (~/.cursor)"
+    echo "  - Windsurf (~/.windsurf)"
+    echo "  - Cline (~/.cline)"
+    echo "  - Continue (~/.continue)"
+    echo
     echo "Options:"
-    echo "  --claude-dir DIR    Custom Claude directory (default: ~/.claude)"
+    echo "  --claude-dir DIR    Custom directory (overrides auto-detection)"
     echo "  --dry-run           Preview what would be installed without making changes"
     echo "  --agents-only       Only install agents"
     echo "  --commands-only     Only install commands"
@@ -503,9 +576,10 @@ show_help() {
     echo "  -h, --help          Show this help"
     echo
     echo "Examples:"
-    echo "  ./install.sh                    Install everything"
-    echo "  ./install.sh --dry-run          Preview installation"
-    echo "  ./install.sh --agents-only -v   Install only agents with verbose output"
+    echo "  ./install.sh                        Install to auto-detected platform"
+    echo "  ./install.sh --dry-run              Preview installation"
+    echo "  ./install.sh --claude-dir ~/.cursor Install to Cursor specifically"
+    echo "  ./install.sh --agents-only -v       Install only agents with verbose output"
     echo
 }
 

@@ -91,12 +91,51 @@ go vet ./... 2>&1 | head -50
 go test ./... 2>&1 | head -100
 ```
 
-## Output
+## Output Format
 
-Report:
-- What passed
-- What failed (with specific errors)
-- Suggested fixes for any failures
+Return structured results with scoring:
 
-If everything passes, confirm the changes are ready for commit.
+```
+Verification Results
+====================
+Score: 85/100
+
+✓ Passed:
+  - Type checking (tsc)
+  - Linting (eslint)
+  - Build (next build)
+
+✗ Failed:
+  - Unit tests (3 failures)
+
+Critical (blocks merge):
+  src/utils/auth.test.ts:45 - Expected token to be valid
+  src/api/user.test.ts:23 - Missing mock for fetchUser
+  src/api/user.test.ts:67 - Timeout exceeded
+
+Warnings (should fix):
+  [none]
+
+Suggestions (nice to have):
+  - Consider adding test for edge case in parseDate()
+
+Summary: 3 critical, 0 warnings, 1 suggestion
+Ready for commit: NO (fix critical issues first)
+```
+
+### Severity Tiers
+
+| Tier | Impact | Examples |
+|------|--------|----------|
+| **Critical** | -25 pts, blocks merge | Type errors, failing tests, security issues |
+| **Serious** | -10 pts each | Lint errors, missing error handling |
+| **Moderate** | -5 pts each | Style issues, missing tests for new code |
+| **Suggestion** | 0 pts | Nice-to-have improvements |
+
+### Scoring Rules
+
+- Start at 100 points
+- Deduct based on severity tier
+- Minimum score: 0
+- **Ready for commit**: Score ≥ 70 AND no critical issues
 
