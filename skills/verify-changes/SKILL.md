@@ -7,6 +7,8 @@ context: fork
 
 # Verify Changes
 
+> **Quick Reference**: Detect project type → Run typecheck → Run lint → Run tests → Run build → Score results → Report readiness.
+
 After making code changes, this skill runs comprehensive verification to catch issues before commit.
 
 ## When to Use

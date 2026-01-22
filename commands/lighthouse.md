@@ -5,6 +5,8 @@ allowed-tools: Bash, Read, Edit, Write, Glob, Grep, TodoWrite
 
 # /lighthouse
 
+> **Quick Reference**: Build production → Start server → Run Lighthouse → Apply known fixes → Re-run until target (default 95) → Report results.
+
 Run Lighthouse audits on a web app and iteratively fix issues until target scores are achieved.
 
 ## Arguments

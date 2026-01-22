@@ -60,6 +60,11 @@ Specialized subagents invoked automatically by Claude Code's Task tool. **Framew
 | `debugger` | Root cause analysis, error tracing, systematic debugging |
 | `refactoring-specialist` | Code smells, simplification, safe transformations |
 
+**All agents include:**
+- **Confidence scoring** (0-100 scale) - Only make changes with confidence ≥75
+- **Anti-patterns section** - Domain-specific "never do" lists to prevent common mistakes
+- **Handoff protocols** - Clear guidance on when to delegate to other specialists
+
 All agents use **opus** model for maximum capability.
 
 ### Skills (3)
@@ -88,17 +93,25 @@ Then just talk naturally: "show my tasks", "search rebrand issues", "mark ENG-12
 
 **verify-changes**: Auto-detects project type and runs appropriate verification (typecheck, lint, test, build). Provides the feedback loop that 2-3x code quality.
 
-### Commands (7)
+### Commands (8)
 
 Slash commands for common workflows:
 
-- `/deslop` - Remove AI-generated slop from diffs (extra comments, defensive checks, type escapes, console.logs).
-- `/repo-polish` - Fire-and-forget repository cleanup. Creates a branch, fixes issues, opens a PR.
-- `/update-claudes` - Generates CLAUDE.md files throughout your project for AI context.
-- `/minimize-ui` - Systematic UI minimalization through ruthless reduction. 7-phase workflow that removes before polishing.
-- `/generate-precommit-hooks` - Detect project type and set up appropriate pre-commit hooks (husky, lint-staged, etc.).
-- `/lighthouse` - Run Lighthouse audits and iteratively fix issues until target scores are met. Optimizes performance, accessibility, best practices, and SEO.
-- `/xml` - Convert prompts to XML format for structured Claude interactions.
+| Command | Description |
+|---------|-------------|
+| `/deslop` | Remove AI-generated slop from diffs. Includes before/after examples, confidence scoring, false positive lists. |
+| `/design-audit` | Audit UI for accessibility (WCAG) and visual consistency. Supports `--thorough` for multi-agent validation. |
+| `/repo-polish` | Fire-and-forget repository cleanup. Creates a branch, fixes issues, opens a PR. |
+| `/update-claudes` | Generates CLAUDE.md files throughout your project for AI context. |
+| `/minimize-ui` | Systematic UI minimalization through ruthless reduction. 7-phase workflow. |
+| `/generate-precommit-hooks` | Detect project type and set up appropriate pre-commit hooks. |
+| `/lighthouse` | Run Lighthouse audits and iteratively fix issues until target scores (default 95). |
+| `/xml` | Convert prompts to XML format for structured Claude interactions. |
+
+**All commands include:**
+- **Quick reference** at the top for fast scanning
+- **Confidence-based filtering** to reduce false positives
+- **False positive lists** documenting what NOT to flag
 
 ### Statusline
 
@@ -274,6 +287,17 @@ You are an expert...
 ## Quality/Security Checklist
 - [ ] Item 1
 - [ ] Item 2
+
+## Confidence Scoring
+| Score | Meaning | Action |
+|-------|---------|--------|
+| 0-25 | Might be intentional | Ask before changing |
+| 50 | Likely improvement | Suggest with explanation |
+| 75-100 | Definitely should change | Implement directly |
+
+## Anti-Patterns (Never Do)
+- Never do X
+- Never do Y
 
 ## Handoff Protocol
 - **Related task**: HANDOFF:other-agent

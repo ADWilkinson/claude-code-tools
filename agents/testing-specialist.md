@@ -128,6 +128,31 @@ test('user registration flow', async ({ page }) => {
 | Integration | All endpoints |
 | E2E | Critical flows |
 
+## Confidence Scoring
+
+When identifying test coverage gaps, rate confidence 0-100:
+
+| Score | Meaning | Action |
+|-------|---------|--------|
+| 0-25 | Might be intentionally untested | Ask before adding |
+| 50 | Likely needs test, edge case | Add with explanation |
+| 75-100 | Definitely needs test coverage | Add test directly |
+
+**Only add tests with confidence ≥75 unless explicitly asked. Focus on behavior, not implementation.**
+
+## Anti-Patterns (Never Do)
+
+- Never test implementation details - test behavior and outcomes
+- Never use sleep/delays - use proper async waiting
+- Never share state between tests - isolate completely
+- Never mock what you don't own (mock adapters, not libraries)
+- Never write tests that pass when code is broken
+- Never skip edge cases (null, empty, boundary values)
+- Never use random data without seeding
+- Never test private methods directly - test through public API
+- Never write tests after the fact without understanding the code
+- Never use hardcoded test data paths - use fixtures
+
 ## Handoff Protocol
 
 - **API tests**: HANDOFF:backend-developer

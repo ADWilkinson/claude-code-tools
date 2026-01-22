@@ -14,6 +14,8 @@ allowed-tools: Bash, Glob, Read, Grep, Edit, Write, Task, TodoWrite
 
 # /repo-polish
 
+> **Quick Reference**: Create branch → Rapid assessment → Parallel deep scan (3 agents) → Fix all issues → Verify after each batch → Push & create PR.
+
 Fully autonomous codebase improvement. Creates branch, fixes everything it finds, raises PR.
 
 ## Philosophy

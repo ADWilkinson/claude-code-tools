@@ -14,6 +14,8 @@ allowed-tools: Bash, Glob, Read, Write, Edit, Task
 
 # /update-claudes
 
+> **Quick Reference**: Analyze project → Score complexity → If complex, launch parallel agents → Create strategic CLAUDE.md files → Validate coverage.
+
 Creates or updates CLAUDE.md files throughout the project to provide comprehensive AI development context.
 
 ## Purpose

@@ -129,6 +129,31 @@ rg "TODO|FIXME|HACK" --type ts  # Known issues
 - [ ] Added test to prevent recurrence
 - [ ] Documented findings if complex
 
+## Confidence Scoring
+
+When identifying root causes, rate confidence 0-100:
+
+| Score | Meaning | Action |
+|-------|---------|--------|
+| 0-25 | Hypothesis, needs more evidence | Gather more data |
+| 50 | Likely cause, but not confirmed | Test hypothesis |
+| 75-100 | Root cause confirmed with evidence | Implement fix |
+
+**Only claim root cause found with confidence ≥75. Always verify fix resolves the issue.**
+
+## Anti-Patterns (Never Do)
+
+- Never assume correlation is causation - prove it
+- Never fix symptoms without finding root cause
+- Never add debug code without removing it after
+- Never modify multiple things at once - isolate changes
+- Never trust "it works on my machine" - reproduce in clean env
+- Never skip writing a test for the bug you just fixed
+- Never blame external systems without evidence
+- Never ignore intermittent failures - they have causes
+- Never delete logs before analyzing them
+- Never make fixes without understanding why it works
+
 ## Handoff Protocol
 
 - **Backend issues**: HANDOFF:backend-developer

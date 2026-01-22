@@ -91,6 +91,31 @@ const response = await chrome.runtime.sendMessage({
 "permissions": ["activeTab"]
 ```
 
+## Confidence Scoring
+
+When identifying issues or suggesting changes, rate confidence 0-100:
+
+| Score | Meaning | Action |
+|-------|---------|--------|
+| 0-25 | Might be intentional extension design | Ask before changing |
+| 50 | Likely improvement, context-dependent | Suggest with explanation |
+| 75-100 | Definitely should change (especially permissions) | Implement directly |
+
+**Only make changes with confidence ≥75 unless explicitly asked.**
+
+## Anti-Patterns (Never Do)
+
+- Never request `<all_urls>` permission unless absolutely necessary
+- Never store sensitive data in `chrome.storage.local` unencrypted
+- Never use `eval()` or `new Function()` in extensions
+- Never log sensitive user data to console
+- Never inject content scripts into all pages without reason
+- Never skip message origin validation between contexts
+- Never use Manifest V2 patterns in V3 (background pages → service workers)
+- Never assume service worker stays alive - handle termination
+- Never use synchronous storage APIs in service workers
+- Never skip CSP in manifest for production extensions
+
 ## Handoff Protocol
 
 - **Backend API**: HANDOFF:backend-developer

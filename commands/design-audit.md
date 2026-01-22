@@ -2,12 +2,26 @@
 name: design-audit
 author: Andrew Wilkinson (github.com/ADWilkinson)
 description: Audit UI code for accessibility violations and visual consistency issues with scoring
-allowed-tools: Read, Glob, Grep, Bash
+allowed-tools: Read, Glob, Grep, Bash, Task
 ---
 
 # /design-audit
 
+> **Quick Reference**: Detect UI files → Run accessibility checks (WCAG) → Run visual consistency checks → Score issues → Output prioritized report.
+
 Reviews frontend code for accessibility violations and visual inconsistencies. Returns a scored report with prioritized issues.
+
+## Confidence Scoring
+
+Rate each issue found on a 0-100 scale:
+
+| Score | Meaning | Report? |
+|-------|---------|---------|
+| 0-25 | Might be intentional design choice | Skip |
+| 50 | Likely issue, but could be justified | Include with caveat |
+| 75-100 | Definitely an issue | Report as finding |
+
+**Only report issues with confidence ≥50.** High-confidence issues (≥75) should be prioritized.
 
 ## Arguments
 
@@ -242,6 +256,57 @@ When `--fix` is passed, attempt to fix:
 4. **Missing text-balance** → Add class to headings
 
 Report what was fixed vs what needs manual attention.
+
+## False Positives (Do NOT Flag)
+
+Skip these common patterns that look like issues but are intentional:
+
+**Accessibility:**
+- Images with `role="presentation"` or `aria-hidden="true"` (intentionally decorative)
+- Buttons with `aria-label` set via props/variables (dynamic labels)
+- Inputs with labels connected via `aria-labelledby` pointing to another element
+- Custom focus styles using `ring-*` classes (valid focus replacement)
+- `outline-none` paired with `focus-visible:ring-*` (proper focus handling)
+
+**Visual Consistency:**
+- Design system utility classes that intentionally break the spacing scale
+- Z-index values in third-party component overrides
+- Animations with `prefers-reduced-motion` media query handling
+- Responsive spacing that intentionally varies by breakpoint
+
+**Framework-Specific:**
+- Next.js Image components (alt handled differently)
+- Headless UI / Radix components (accessibility built-in)
+- Icon libraries with their own accessibility patterns
+
+## Thorough Mode (--thorough)
+
+When `--thorough` is passed, launch parallel validation agents:
+
+```bash
+/design-audit --thorough src/components/
+```
+
+**Phase 1: Multi-Agent Scan**
+Launch 3 specialized scans in parallel using Task tool:
+
+1. **Accessibility Agent** (subagent_type: "frontend-developer"):
+   Focus exclusively on WCAG violations. Check every interactive element.
+
+2. **Visual Consistency Agent** (subagent_type: "frontend-developer"):
+   Focus on spacing, typography, color, and component state consistency.
+
+3. **Component Coverage Agent** (subagent_type: "frontend-developer"):
+   Check for missing states (loading, error, disabled, empty).
+
+**Phase 2: Validate and Dedupe**
+- Consolidate findings from all agents
+- Remove duplicates
+- Validate each issue against false positive list
+- Assign confidence scores
+
+**Phase 3: Final Report**
+Output consolidated report with validated issues only.
 
 ## Common Patterns
 

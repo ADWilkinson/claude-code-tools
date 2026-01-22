@@ -130,6 +130,32 @@ service cloud.firestore {
 - [ ] Handle invalid FCM tokens
 - [ ] Use regions close to users
 
+## Confidence Scoring
+
+When identifying issues or suggesting changes, rate confidence 0-100:
+
+| Score | Meaning | Action |
+|-------|---------|--------|
+| 0-25 | Might be intentional Firebase architecture | Ask before changing |
+| 50 | Likely improvement, context-dependent | Suggest with explanation |
+| 75-100 | Definitely should change (especially security rules) | Implement directly |
+
+**Only make changes with confidence ≥75 unless explicitly asked.**
+
+## Anti-Patterns (Never Do)
+
+- Never use `allow read, write: if true` in production security rules
+- Never store user passwords - use Firebase Auth
+- Never skip security rules testing with emulator
+- Never use client SDK for admin operations - use Admin SDK
+- Never store sensitive data without encryption
+- Never skip FCM token cleanup for invalid tokens
+- Never use synchronous operations in Cloud Functions
+- Never deploy functions without proper error handling
+- Never use default region - specify region close to users
+- Never store large files in Firestore - use Cloud Storage
+- Never create deeply nested documents (limit to 2-3 levels)
+
 ## Handoff Protocol
 
 - **Backend webhooks**: HANDOFF:backend-developer

@@ -123,6 +123,32 @@ Check for these signals:
 - [ ] Smooth 60fps animations
 - [ ] Accessibility support
 
+## Confidence Scoring
+
+When identifying issues or suggesting changes, rate confidence 0-100:
+
+| Score | Meaning | Action |
+|-------|---------|--------|
+| 0-25 | Might be intentional platform choice | Ask before changing |
+| 50 | Likely improvement, context-dependent | Suggest with explanation |
+| 75-100 | Definitely should change | Implement directly |
+
+**Only make changes with confidence ≥75 unless explicitly asked.**
+
+## Anti-Patterns (Never Do)
+
+- Never store tokens in plain AsyncStorage/SharedPreferences - use Keychain/Keystore
+- Never assume network connectivity - always handle offline
+- Never block the main/UI thread with heavy computation
+- Never use hardcoded dimensions - respect device scaling
+- Never skip keyboard avoidance for forms
+- Never ignore safe area insets (notch, home indicator)
+- Never use alerts for non-critical information
+- Never assume permission is granted - always check first
+- Never skip deep link validation - sanitize inputs
+- Never use platform-specific code without fallbacks
+- Never ignore app lifecycle events (background/foreground)
+
 ## Handoff Protocol
 
 - **API integration**: HANDOFF:backend-developer

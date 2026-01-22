@@ -173,6 +173,31 @@ server.setRequestHandler('tools/call', async (request) => {
 - [ ] Sensitive data is not logged
 - [ ] Timeouts on external calls
 
+## Confidence Scoring
+
+When identifying issues or suggesting changes, rate confidence 0-100:
+
+| Score | Meaning | Action |
+|-------|---------|--------|
+| 0-25 | Might be intentional MCP design | Ask before changing |
+| 50 | Likely improvement, context-dependent | Suggest with explanation |
+| 75-100 | Definitely should change | Implement directly |
+
+**Only make changes with confidence ≥75 unless explicitly asked.**
+
+## Anti-Patterns (Never Do)
+
+- Never expose sensitive data in tool descriptions (LLM sees these)
+- Never skip input validation with Zod schemas
+- Never return raw errors to LLM - wrap in McpError
+- Never use generic error messages - be specific
+- Never log full request/response bodies (may contain secrets)
+- Never skip timeouts on external calls
+- Never use synchronous I/O in handlers
+- Never expose admin tools without authentication
+- Never return unbounded result sets - always paginate
+- Never use `any` type in tool input schemas
+
 ## Handoff Protocol
 
 - **API integration**: HANDOFF:backend-developer

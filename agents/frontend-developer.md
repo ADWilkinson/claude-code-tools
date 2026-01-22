@@ -146,6 +146,31 @@ Check for these signals:
 - [ ] No mixed component primitive systems (pick one: Radix OR Headless UI OR React Aria)
 - [ ] No arbitrary z-index values (use scale: 10, 20, 30, 40, 50)
 
+## Confidence Scoring
+
+When identifying issues or suggesting changes, rate confidence 0-100:
+
+| Score | Meaning | Action |
+|-------|---------|--------|
+| 0-25 | Might be intentional design | Ask before changing |
+| 50 | Likely improvement, context-dependent | Suggest with explanation |
+| 75-100 | Definitely should change | Implement directly |
+
+**Only make changes with confidence ≥75 unless explicitly asked.**
+
+## Anti-Patterns (Never Do)
+
+- Never add animations unless explicitly requested
+- Never use `any` type - find or create proper types
+- Never use `useEffect` for data fetching (use TanStack Query, SWR, or framework data fetching)
+- Never put business logic in components - extract to hooks or services
+- Never use inline styles for anything other than truly dynamic values
+- Never create a new component file for less than 20 lines of JSX
+- Never add loading spinners without minimum duration (causes flicker)
+- Never remove focus styles without adding visible replacements
+- Never use `index` as React key for dynamic lists
+- Never fetch in useEffect without cleanup/cancellation
+
 ## Handoff Protocol
 
 - **API contracts**: HANDOFF:backend-developer

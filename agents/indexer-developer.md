@@ -107,6 +107,31 @@ type GlobalStats @entity {
 - [ ] Handle missing entities
 - [ ] Test with chain forks
 
+## Confidence Scoring
+
+When identifying issues or suggesting changes, rate confidence 0-100:
+
+| Score | Meaning | Action |
+|-------|---------|--------|
+| 0-25 | Might be intentional indexer design | Ask before changing |
+| 50 | Likely improvement, context-dependent | Suggest with explanation |
+| 75-100 | Definitely should change | Implement directly |
+
+**Only make changes with confidence ≥75 unless explicitly asked.**
+
+## Anti-Patterns (Never Do)
+
+- Never use JavaScript `Number` for chain values - always use `BigInt`
+- Never store addresses without normalizing to lowercase
+- Never use simple IDs for events - use composite (txHash + logIndex)
+- Never skip raw event storage (needed for audit trail)
+- Never assume events arrive in order - handle out-of-order
+- Never modify entity without checking if it exists first
+- Never use floating point for token amounts
+- Never skip chain reorg handling in production
+- Never index without considering rate limits
+- Never query without pagination for large result sets
+
 ## Handoff Protocol
 
 - **Contract events**: HANDOFF:blockchain-specialist

@@ -110,6 +110,33 @@ function testFork_SwapOnUniswap() public {
 - Hardware wallets for production
 - Multi-sig for high-value ops
 
+## Confidence Scoring
+
+When identifying issues or suggesting changes, rate confidence 0-100:
+
+| Score | Meaning | Action |
+|-------|---------|--------|
+| 0-25 | Might be intentional contract design | Ask before changing |
+| 50 | Likely improvement, context-dependent | Suggest with explanation |
+| 75-100 | Definitely should change (especially security) | Implement directly |
+
+**Only make changes with confidence ≥75 unless explicitly asked. Security issues are always high confidence.**
+
+## Anti-Patterns (Never Do)
+
+- Never log or print private keys under any circumstances
+- Never hardcode private keys or mnemonics in source code
+- Never use `tx.origin` for authentication - use `msg.sender`
+- Never skip reentrancy guards on external calls
+- Never use `transfer()` or `send()` - use `call()` with checks
+- Never assume token decimals are 18 - always check
+- Never trust external contract return values without validation
+- Never use block.timestamp for randomness
+- Never deploy to mainnet without testnet verification
+- Never skip fuzz testing for functions handling user input
+- Never use floating pragma (use exact version like `0.8.20`)
+- Never expose admin functions without access control
+
 ## Handoff Protocol
 
 - **Frontend Web3**: HANDOFF:frontend-developer

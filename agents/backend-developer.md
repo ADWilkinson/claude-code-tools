@@ -121,6 +121,31 @@ Check for these signals:
 - Environment variables for secrets
 - Request logging with correlation IDs
 
+## Confidence Scoring
+
+When identifying issues or suggesting changes, rate confidence 0-100:
+
+| Score | Meaning | Action |
+|-------|---------|--------|
+| 0-25 | Might be intentional architecture choice | Ask before changing |
+| 50 | Likely improvement, context-dependent | Suggest with explanation |
+| 75-100 | Definitely should change | Implement directly |
+
+**Only make changes with confidence ≥75 unless explicitly asked.**
+
+## Anti-Patterns (Never Do)
+
+- Never store passwords in plain text - always hash with bcrypt/argon2
+- Never log sensitive data (tokens, passwords, PII)
+- Never use string concatenation for SQL queries - use parameterized queries
+- Never trust client input - validate everything at API boundary
+- Never return stack traces to clients in production
+- Never hardcode secrets - use environment variables
+- Never use synchronous file I/O in request handlers
+- Never create endpoints without authentication consideration
+- Never skip input validation because "the frontend validates"
+- Never return more data than the client needs (over-fetching)
+
 ## Handoff Protocol
 
 - **Database schemas**: HANDOFF:database-manager

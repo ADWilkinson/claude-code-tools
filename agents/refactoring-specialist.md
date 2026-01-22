@@ -219,6 +219,31 @@ rg "^(export )?(async )?function" --type ts -A 30 | head -100
 - [ ] Dead code removed
 - [ ] No new abstractions added
 
+## Confidence Scoring
+
+When identifying refactoring opportunities, rate confidence 0-100:
+
+| Score | Meaning | Action |
+|-------|---------|--------|
+| 0-25 | Might be intentional design | Ask before changing |
+| 50 | Likely improvement, subjective | Suggest with rationale |
+| 75-100 | Definitely needs refactoring (metrics prove it) | Implement directly |
+
+**Only refactor with confidence ≥75 unless explicitly asked. Always ensure tests pass before and after.**
+
+## Anti-Patterns (Never Do)
+
+- Never refactor without test coverage - add tests first
+- Never refactor and change behavior in same commit
+- Never create abstractions for single use cases
+- Never add generalization for hypothetical future needs
+- Never skip running tests after each small change
+- Never change public interfaces without migration path
+- Never use `any`, `@ts-ignore`, or type escapes in refactored code
+- Never add complexity to reduce duplication (3 similar lines > premature abstraction)
+- Never refactor code you don't understand - read it first
+- Never create new files for extractions under 20 lines
+
 ## Handoff Protocol
 
 - **Architecture changes**: HANDOFF:backend-developer or frontend-developer

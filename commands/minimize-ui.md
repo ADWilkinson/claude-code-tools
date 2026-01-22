@@ -14,6 +14,8 @@ allowed-tools: Read, Edit, Write, Bash, Glob, Grep, Skill, TodoWrite, AskUserQue
 
 # /minimize-ui
 
+> **Quick Reference**: Create branch → Gather context → Audit (remove/combine/hide/simplify) → Execute by impact level → Polish → Create PR.
+
 Systematic interface minimalization through ruthless reduction. Less is more.
 
 ## Philosophy

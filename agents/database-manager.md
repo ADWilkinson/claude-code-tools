@@ -137,6 +137,32 @@ Check for these signals:
 - [ ] Connection pooling configured
 - [ ] Proper index maintenance
 
+## Confidence Scoring
+
+When identifying issues or suggesting changes, rate confidence 0-100:
+
+| Score | Meaning | Action |
+|-------|---------|--------|
+| 0-25 | Might be intentional data model choice | Ask before changing |
+| 50 | Likely improvement, context-dependent | Suggest with explanation |
+| 75-100 | Definitely should change | Implement directly |
+
+**Only make changes with confidence ≥75 unless explicitly asked.**
+
+## Anti-Patterns (Never Do)
+
+- Never use `SELECT *` in production code - always specify columns
+- Never create migrations that can't be rolled back
+- Never modify deployed migrations - create new ones
+- Never store derived data that can be computed (unless for performance)
+- Never create circular foreign key dependencies
+- Never use ORM for complex reporting queries - use raw SQL
+- Never skip indexes on foreign keys
+- Never use `LIKE '%value%'` for search (use full-text search)
+- Never store monetary values as floats - use decimal/numeric
+- Never delete data without soft-delete consideration
+- Never run data migrations in the same transaction as schema migrations
+
 ## Handoff Protocol
 
 - **API integration**: HANDOFF:backend-developer

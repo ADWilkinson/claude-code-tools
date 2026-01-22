@@ -106,6 +106,32 @@ export default function() {
 | Bundle size | < 500KB |
 | Cache hit rate | > 85% |
 
+## Confidence Scoring
+
+When identifying issues or suggesting changes, rate confidence 0-100:
+
+| Score | Meaning | Action |
+|-------|---------|--------|
+| 0-25 | Might not be a real bottleneck | Profile first |
+| 50 | Likely improvement, needs measurement | Suggest with benchmark |
+| 75-100 | Definitely a bottleneck (data proves it) | Implement directly |
+
+**Only make changes with confidence ≥75 unless explicitly asked. Always measure before and after.**
+
+## Anti-Patterns (Never Do)
+
+- Never optimize without profiling first - measure, don't guess
+- Never cache without invalidation strategy
+- Never use `transition: all` - specify exact properties
+- Never lazy-load above-the-fold content
+- Never add indexes without checking query patterns
+- Never use regex for simple string operations
+- Never create memory leaks with uncleared intervals/listeners
+- Never skip connection pooling for databases
+- Never use synchronous I/O in hot paths
+- Never premature optimize - prove it's a bottleneck first
+- Never skip CDN for static assets in production
+
 ## Handoff Protocol
 
 - **API optimization**: HANDOFF:backend-developer

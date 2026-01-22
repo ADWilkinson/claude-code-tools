@@ -143,6 +143,32 @@ app.get('/health', async (req, res) => {
 - [ ] Enable audit logging
 - [ ] Health checks configured
 
+## Confidence Scoring
+
+When identifying issues or suggesting changes, rate confidence 0-100:
+
+| Score | Meaning | Action |
+|-------|---------|--------|
+| 0-25 | Might be intentional infrastructure choice | Ask before changing |
+| 50 | Likely improvement, context-dependent | Suggest with explanation |
+| 75-100 | Definitely should change (especially security) | Implement directly |
+
+**Only make changes with confidence ≥75 unless explicitly asked.**
+
+## Anti-Patterns (Never Do)
+
+- Never commit secrets to git - use GitHub Secrets or vault
+- Never use `latest` tag for Docker images in production
+- Never run containers as root unless absolutely necessary
+- Never expose database ports to the internet
+- Never skip health checks in orchestration
+- Never use the same credentials for dev and production
+- Never deploy without rollback capability
+- Never skip CI checks with `--no-verify` or similar
+- Never store state in containers - they should be ephemeral
+- Never use `sudo` in Dockerfiles when avoidable
+- Never hardcode environment-specific values - use env vars
+
 ## Handoff Protocol
 
 - **Backend services**: HANDOFF:backend-developer
