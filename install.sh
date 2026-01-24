@@ -6,7 +6,7 @@
 
 set -e
 
-VERSION="1.4.0"
+VERSION="2.0.0"
 
 # Colors
 RED='\033[0;31m'
@@ -24,7 +24,6 @@ INSTALL_SUCCESS=false
 DRY_RUN=false
 VERBOSE=false
 INSTALL_AGENTS=true
-INSTALL_COMMANDS=true
 INSTALL_STATUSLINE=true
 INSTALL_SKILLS=true
 INSTALL_HOOKS=true
@@ -109,10 +108,6 @@ rollback_installation() {
                 filename="${BASH_REMATCH[1]}"
                 rm -f "$CLAUDE_DIR/agents/$filename"
                 [ -f "$BACKUP_DIR/agents/$filename" ] && cp "$BACKUP_DIR/agents/$filename" "$CLAUDE_DIR/agents/"
-            elif [[ $line =~ ^[[:space:]]*Command:[[:space:]]*(.+\.md)$ ]]; then
-                filename="${BASH_REMATCH[1]}"
-                rm -f "$CLAUDE_DIR/commands/$filename"
-                [ -f "$BACKUP_DIR/commands/$filename" ] && cp "$BACKUP_DIR/commands/$filename" "$CLAUDE_DIR/commands/"
             elif [[ $line =~ ^[[:space:]]*Skill:[[:space:]]*(.+)$ ]]; then
                 skill_name="${BASH_REMATCH[1]}"
                 rm -rf "$CLAUDE_DIR/skills/$skill_name"
@@ -167,7 +162,6 @@ create_directories() {
     if [ "$DRY_RUN" = true ]; then
         local dirs=()
         [ "$INSTALL_AGENTS" = true ] && dirs+=("$CLAUDE_DIR/agents")
-        [ "$INSTALL_COMMANDS" = true ] && dirs+=("$CLAUDE_DIR/commands")
         [ "$INSTALL_SKILLS" = true ] && dirs+=("$CLAUDE_DIR/skills")
         [ "$INSTALL_HOOKS" = true ] && dirs+=("$CLAUDE_DIR/hooks")
         if [ ${#dirs[@]} -gt 0 ]; then
@@ -178,7 +172,6 @@ create_directories() {
         return
     fi
     [ "$INSTALL_AGENTS" = true ] && mkdir -p "$CLAUDE_DIR/agents"
-    [ "$INSTALL_COMMANDS" = true ] && mkdir -p "$CLAUDE_DIR/commands"
     [ "$INSTALL_SKILLS" = true ] && mkdir -p "$CLAUDE_DIR/skills"
     [ "$INSTALL_HOOKS" = true ] && mkdir -p "$CLAUDE_DIR/hooks"
     print_verbose "Directories ready"
@@ -194,7 +187,6 @@ backup_existing() {
     BACKUP_DIR="$CLAUDE_DIR/backup_$timestamp"
 
     mkdir -p "$BACKUP_DIR/agents"
-    mkdir -p "$BACKUP_DIR/commands"
     mkdir -p "$BACKUP_DIR/skills"
     mkdir -p "$BACKUP_DIR/hooks"
     mkdir -p "$BACKUP_DIR/statusline"
@@ -216,20 +208,6 @@ backup_existing() {
                     cp "$CLAUDE_DIR/agents/$agent_name" "$BACKUP_DIR/agents/"
                     ((files_backed_up++)) || true
                     print_verbose "Backed up: $agent_name"
-                fi
-            fi
-        done
-    fi
-
-    if [ "$INSTALL_COMMANDS" = true ] && [ -d "commands" ]; then
-        for command_file in commands/*.md; do
-            if [ -f "$command_file" ]; then
-                command_name=$(basename "$command_file")
-                echo "Command: $command_name" >> "$BACKUP_DIR/metadata/manifest.txt"
-                if [ -f "$CLAUDE_DIR/commands/$command_name" ]; then
-                    cp "$CLAUDE_DIR/commands/$command_name" "$BACKUP_DIR/commands/"
-                    ((files_backed_up++)) || true
-                    print_verbose "Backed up: $command_name"
                 fi
             fi
         done
@@ -307,35 +285,6 @@ install_agents() {
     done
 
     print_success "Installed $count agents"
-}
-
-install_commands() {
-    if [ "$INSTALL_COMMANDS" = false ]; then
-        return
-    fi
-
-    print_status "Installing commands..."
-
-    if [ ! -d "commands" ]; then
-        print_warning "No commands directory found, skipping"
-        return
-    fi
-
-    local count=0
-    for command_file in commands/*.md; do
-        if [ -f "$command_file" ]; then
-            command_name=$(basename "$command_file" .md)
-            if [ "$DRY_RUN" = true ]; then
-                print_dry "Would install command: /$command_name"
-            else
-                cp "$command_file" "$CLAUDE_DIR/commands/"
-                print_verbose "Installed: /$command_name"
-            fi
-            ((count++)) || true
-        fi
-    done
-
-    print_success "Installed $count commands"
 }
 
 install_skills() {
@@ -472,16 +421,6 @@ show_preview() {
         echo
     fi
 
-    if [ "$INSTALL_COMMANDS" = true ] && [ -d "commands" ]; then
-        echo "  Commands:"
-        for command_file in commands/*.md; do
-            if [ -f "$command_file" ]; then
-                echo "    /$(basename "$command_file" .md)"
-            fi
-        done
-        echo
-    fi
-
     if [ "$INSTALL_SKILLS" = true ] && [ -d "skills" ]; then
         echo "  Skills:"
         for skill_dir in skills/*; do
@@ -525,11 +464,6 @@ show_summary() {
         echo "  $agent_count agents in $CLAUDE_DIR/agents/"
     fi
 
-    if [ "$INSTALL_COMMANDS" = true ]; then
-        local cmd_count=$(ls -1 "$CLAUDE_DIR/commands"/*.md 2>/dev/null | wc -l | tr -d ' ')
-        echo "  $cmd_count commands in $CLAUDE_DIR/commands/"
-    fi
-
     if [ "$INSTALL_SKILLS" = true ]; then
         local skill_count=$(ls -1 "$CLAUDE_DIR/skills"/*/SKILL.md 2>/dev/null | wc -l | tr -d ' ')
         echo "  $skill_count skills in $CLAUDE_DIR/skills/"
@@ -543,8 +477,8 @@ show_summary() {
     echo
     echo -e "${BOLD}Usage:${NC}"
     echo "  Agents are auto-invoked by Claude Code via the Task tool"
-    echo "  Commands: /deslop, /repo-polish, /update-claudes, /minimize-ui, /lighthouse, etc."
-    echo "  Skills auto-activate based on your prompt"
+    echo "  Skills: /deslop, /repo-polish, /update-claudes, /minimize-ui, /lighthouse, etc."
+    echo "  Some skills auto-activate based on your prompt (e.g., verify-changes, linear)"
     echo "  Hooks require settings.json configuration (see hooks/README.md)"
     echo
 }
@@ -565,7 +499,6 @@ show_help() {
     echo "  --claude-dir DIR    Custom directory (overrides auto-detection)"
     echo "  --dry-run           Preview what would be installed without making changes"
     echo "  --agents-only       Only install agents"
-    echo "  --commands-only     Only install commands"
     echo "  --skills-only       Only install skills"
     echo "  --hooks-only        Only install hooks"
     echo "  --no-skills         Skip skill installation"
@@ -595,14 +528,6 @@ main() {
                 shift
                 ;;
             --agents-only)
-                INSTALL_COMMANDS=false
-                INSTALL_STATUSLINE=false
-                INSTALL_SKILLS=false
-                INSTALL_HOOKS=false
-                shift
-                ;;
-            --commands-only)
-                INSTALL_AGENTS=false
                 INSTALL_STATUSLINE=false
                 INSTALL_SKILLS=false
                 INSTALL_HOOKS=false
@@ -610,14 +535,12 @@ main() {
                 ;;
             --skills-only)
                 INSTALL_AGENTS=false
-                INSTALL_COMMANDS=false
                 INSTALL_STATUSLINE=false
                 INSTALL_HOOKS=false
                 shift
                 ;;
             --hooks-only)
                 INSTALL_AGENTS=false
-                INSTALL_COMMANDS=false
                 INSTALL_STATUSLINE=false
                 INSTALL_SKILLS=false
                 shift
@@ -662,7 +585,7 @@ main() {
     CLAUDE_DIR="${CLAUDE_DIR/#\~/$HOME}"
 
     # Check if we're in the right directory
-    if [ ! -d "agents" ] && [ ! -d "commands" ] && [ ! -d "skills" ] && [ ! -d "hooks" ]; then
+    if [ ! -d "agents" ] && [ ! -d "skills" ] && [ ! -d "hooks" ]; then
         print_error "Run this script from the claude-code-tools directory"
         exit 1
     fi
@@ -677,7 +600,6 @@ main() {
     backup_existing
     create_directories
     install_agents
-    install_commands
     install_skills
     install_hooks
     install_statusline

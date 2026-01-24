@@ -3,6 +3,7 @@ name: design-audit
 author: Andrew Wilkinson (github.com/ADWilkinson)
 description: Audit UI code for accessibility violations and visual consistency issues with scoring
 allowed-tools: Read, Glob, Grep, Bash, Task
+disable-model-invocation: true
 ---
 
 # /design-audit

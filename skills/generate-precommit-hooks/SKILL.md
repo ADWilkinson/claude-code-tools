@@ -1,3 +1,10 @@
+---
+name: generate-precommit-hooks
+author: Andrew Wilkinson (github.com/ADWilkinson)
+description: Detect project type and set up appropriate pre-commit hooks
+disable-model-invocation: true
+---
+
 # Generate Pre-commit Hooks
 
 Analyze the current project and generate appropriate pre-commit hooks based on the tech stack.

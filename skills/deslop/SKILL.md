@@ -1,3 +1,10 @@
+---
+name: deslop
+author: Andrew Wilkinson (github.com/ADWilkinson)
+description: Remove AI-generated slop from diffs. Includes confidence scoring and false positive lists.
+disable-model-invocation: true
+---
+
 # Remove AI Code Slop
 
 > **Quick Reference**: Check diff against main, identify AI-generated patterns with confidence ≥75, remove surgically, run linter.

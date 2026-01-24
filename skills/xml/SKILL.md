@@ -1,3 +1,10 @@
+---
+name: xml
+author: Andrew Wilkinson (github.com/ADWilkinson)
+description: Convert prompts to XML format for structured Claude interactions
+disable-model-invocation: true
+---
+
 # Convert Prompt to XML
 
 Transform a raw prompt into a well-structured XML prompt for optimal Claude performance.

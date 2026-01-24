@@ -1,16 +1,10 @@
 ---
+name: repo-polish
+author: Andrew Wilkinson (github.com/ADWilkinson)
 description: Autonomous repository improvement. Fire-and-forget command that finds and fixes issues, commits changes to a branch, and raises a PR. No approval needed - the PR is the review gate.
 allowed-tools: Bash, Glob, Read, Grep, Edit, Write, Task, TodoWrite
+disable-model-invocation: true
 ---
-
-<!--
-  /repo-polish
-  Autonomous fire-and-forget repository improvement command for Claude Code.
-
-  Author: Andrew Wilkinson
-  GitHub: https://github.com/ADWilkinson
-  X/Twitter: https://x.com/davyjones0x
--->
 
 # /repo-polish
 

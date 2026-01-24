@@ -1,6 +1,9 @@
 ---
+name: lighthouse
+author: Andrew Wilkinson (github.com/ADWilkinson)
 description: Run Lighthouse audits and iteratively fix issues until target scores are met. Optimizes performance, accessibility, best practices, and SEO.
 allowed-tools: Bash, Read, Edit, Write, Glob, Grep, TodoWrite
+disable-model-invocation: true
 ---
 
 # /lighthouse

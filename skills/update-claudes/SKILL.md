@@ -1,16 +1,10 @@
 ---
+name: update-claudes
+author: Andrew Wilkinson (github.com/ADWilkinson)
 description: Creates or updates CLAUDE.md files throughout the project to provide comprehensive AI development context. Use this to systematically document your codebase for AI assistants.
 allowed-tools: Bash, Glob, Read, Write, Edit, Task
+disable-model-invocation: true
 ---
-
-<!--
-  /update-claudes
-  Systematic CLAUDE.md documentation generator for AI-assisted development.
-
-  Author: Andrew Wilkinson
-  GitHub: https://github.com/ADWilkinson
-  X/Twitter: https://x.com/davyjones0x
--->
 
 # /update-claudes
 
@@ -26,14 +20,14 @@ This command systematically analyzes your project structure and creates/updates 
 **Always document what "is", never what "was changed" or "improved". Documentation should read as if the current implementation has always existed.**
 
 ### Documentation Anti-Patterns to Avoid:
-- ❌ "Refactored the component to use hooks instead of class components"
-- ❌ "Improved performance by implementing caching"
-- ❌ "Previously used X, now uses Y for better results"
+- "Refactored the component to use hooks instead of class components"
+- "Improved performance by implementing caching"
+- "Previously used X, now uses Y for better results"
 
 ### Documentation Best Practices:
-- ✅ "The component uses React hooks for state management"
-- ✅ "Implements caching for optimal performance"
-- ✅ "Uses Y architecture for scalability"
+- "The component uses React hooks for state management"
+- "Implements caching for optimal performance"
+- "Uses Y architecture for scalability"
 
 ## Step 1: Automatic Project Analysis
 

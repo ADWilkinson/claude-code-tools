@@ -5,19 +5,19 @@
     "email": "andrew@adwilkinson.dev"
   },
   "metadata": {
-    "description": "14 specialized agents with confidence scoring and anti-patterns, 8 slash commands, 3 skills, and 4 hooks for Claude Code"
+    "description": "14 specialized agents with confidence scoring and anti-patterns, 11 skills (manual and auto-invoked), and 2 hooks for Claude Code"
   },
   "plugins": [
     {
       "name": "cct",
       "source": "./",
-      "description": "14 specialized agents with confidence scoring and anti-patterns, 8 slash commands with examples and false-positive lists, 3 skills, and 4 hooks. Framework-agnostic tools that adapt to your stack.",
-      "version": "1.5.0",
+      "description": "14 specialized agents with confidence scoring and anti-patterns, 11 skills (manual and auto-invoked) with examples and false-positive lists, and 2 hooks. Framework-agnostic tools that adapt to your stack.",
+      "version": "2.0.0",
       "author": {
         "name": "Andrew Wilkinson"
       },
       "category": "productivity",
-      "tags": ["agents", "commands", "skills", "hooks", "developer-tools", "confidence-scoring"]
+      "tags": ["agents", "skills", "hooks", "developer-tools", "confidence-scoring"]
     }
   ]
 }

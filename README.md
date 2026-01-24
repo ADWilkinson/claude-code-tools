@@ -4,7 +4,7 @@
 [![GitHub last commit](https://img.shields.io/github/last-commit/ADWilkinson/claude-code-tools)](https://github.com/ADWilkinson/claude-code-tools/commits/main)
 [![GitHub stars](https://img.shields.io/github/stars/ADWilkinson/claude-code-tools?style=social)](https://github.com/ADWilkinson/claude-code-tools)
 
-Custom agents, commands, skills, hooks, and statusline for [Claude Code](https://github.com/anthropics/claude-code).
+Custom agents, skills, hooks, and statusline for [Claude Code](https://github.com/anthropics/claude-code).
 
 ## Quick Install
 
@@ -18,14 +18,14 @@ Custom agents, commands, skills, hooks, and statusline for [Claude Code](https:/
 /plugin install cct@cct
 ```
 
-Commands will be namespaced as `/cct:deslop`, `/cct:lighthouse`, etc. Hooks auto-configure when installed as a plugin.
+Skills will be namespaced as `/cct:deslop`, `/cct:lighthouse`, etc. Hooks auto-configure when installed as a plugin.
 
 **For local development:**
 ```bash
 claude --plugin-dir ./claude-code-tools
 ```
 
-### Option 2: Via Install Script (Short Command Names)
+### Option 2: Via Install Script (Short Skill Names)
 
 ```bash
 git clone https://github.com/ADWilkinson/claude-code-tools.git
@@ -33,9 +33,9 @@ cd claude-code-tools
 ./install.sh
 ```
 
-This copies files to `~/.claude/` for short command names like `/deslop`, `/lighthouse`.
+This copies files to `~/.claude/` for short skill names like `/deslop`, `/lighthouse`.
 
-Default install includes agents, commands, skills, hooks, and statusline. The Linear skill will install its dependencies using your available package manager (bun, pnpm, yarn, or npm); hooks still need `settings.json` configuration when using the install script.
+Default install includes agents, skills, hooks, and statusline. The Linear skill will install its dependencies using your available package manager (bun, pnpm, yarn, or npm); hooks still need `settings.json` configuration when using the install script.
 
 ## What's Included
 
@@ -67,15 +67,29 @@ Specialized subagents invoked automatically by Claude Code's Task tool. **Framew
 
 All agents use **opus** model for maximum capability.
 
-### Skills (3)
+### Skills (11)
 
-Auto-invoked skills that Claude applies when relevant:
+Skills are the unified way to extend Claude Code. They can be:
+- **User-invoked** with `/skill-name` (like the former "slash commands")
+- **Model-invoked** automatically when relevant (based on description matching)
 
-| Skill | Trigger | Description |
-|-------|---------|-------------|
-| `linear` | "tasks", "issues", "Linear" | Full Linear task management - view, search, create, update issues |
-| `verify-changes` | After implementing features | Run tests, builds, checks to verify code works |
-| `clarify-before-implementing` | Underspecified implementation requests | Ask targeted clarifying questions before coding to avoid wrong work |
+| Skill | Invocation | Description |
+|-------|------------|-------------|
+| `deslop` | `/deslop` | Remove AI-generated slop from diffs. Confidence scoring, false positive lists. |
+| `design-audit` | `/design-audit` | Audit UI for accessibility (WCAG) and visual consistency. Supports `--thorough`. |
+| `repo-polish` | `/repo-polish` | Fire-and-forget repository cleanup. Creates branch, fixes issues, opens PR. |
+| `update-claudes` | `/update-claudes` | Generate CLAUDE.md files throughout your project for AI context. |
+| `minimize-ui` | `/minimize-ui` | Systematic UI minimalization through ruthless reduction. 7-phase workflow. |
+| `lighthouse` | `/lighthouse` | Run Lighthouse audits and iteratively fix until target scores (default 95). |
+| `generate-precommit-hooks` | `/generate-precommit-hooks` | Detect project type and set up appropriate pre-commit hooks. |
+| `xml` | `/xml` | Convert prompts to XML format for structured Claude interactions. |
+| `linear` | Auto or `/linear` | Full Linear task management - view, search, create, update issues. |
+| `verify-changes` | Auto | Run tests, builds, checks to verify code works after changes. |
+| `clarify-before-implementing` | Auto | Ask targeted clarifying questions before coding to avoid wrong work. |
+
+**User-invoked skills** (marked with `/skill-name`) require manual invocation with the slash command.
+
+**Auto-invoked skills** are triggered automatically by Claude when your request matches their description.
 
 **Linear Skill Features:**
 - `my-tasks` / `backlog` / `in-progress` / `team-tasks` - View issues by state
@@ -92,26 +106,6 @@ export LINEAR_API_KEY="lin_api_..."  # Add to ~/.zshrc
 Then just talk naturally: "show my tasks", "search rebrand issues", "mark ENG-123 done"
 
 **verify-changes**: Auto-detects project type and runs appropriate verification (typecheck, lint, test, build). Provides the feedback loop that 2-3x code quality.
-
-### Commands (8)
-
-Slash commands for common workflows:
-
-| Command | Description |
-|---------|-------------|
-| `/deslop` | Remove AI-generated slop from diffs. Includes before/after examples, confidence scoring, false positive lists. |
-| `/design-audit` | Audit UI for accessibility (WCAG) and visual consistency. Supports `--thorough` for multi-agent validation. |
-| `/repo-polish` | Fire-and-forget repository cleanup. Creates a branch, fixes issues, opens a PR. |
-| `/update-claudes` | Generates CLAUDE.md files throughout your project for AI context. |
-| `/minimize-ui` | Systematic UI minimalization through ruthless reduction. 7-phase workflow. |
-| `/generate-precommit-hooks` | Detect project type and set up appropriate pre-commit hooks. |
-| `/lighthouse` | Run Lighthouse audits and iteratively fix issues until target scores (default 95). |
-| `/xml` | Convert prompts to XML format for structured Claude interactions. |
-
-**All commands include:**
-- **Quick reference** at the top for fast scanning
-- **Confidence-based filtering** to reduce false positives
-- **False positive lists** documenting what NOT to flag
 
 ### Statusline
 
@@ -147,9 +141,6 @@ Reusable rule files for `~/.claude/rules/`:
 
 # Install only agents
 ./install.sh --agents-only
-
-# Install only commands
-./install.sh --commands-only
 
 # Install only skills
 ./install.sh --skills-only
@@ -187,7 +178,7 @@ Pull the latest versions without re-cloning:
 ./update.sh --claude-dir /path/to/.claude
 ```
 
-Agents and commands are always refreshed; skills, hooks, and statusline are updated when installed.
+Agents and skills are refreshed; hooks and statusline are updated when installed.
 
 ## Uninstall
 
@@ -214,24 +205,21 @@ mkdir -p ~/.claude/agents
 cp agents/*.md ~/.claude/agents/
 ```
 
-### Commands
-```bash
-mkdir -p ~/.claude/commands
-cp commands/*.md ~/.claude/commands/
-```
-
 ### Skills
 ```bash
 # Linear (includes dependencies)
 cd skills/linear && ./install.sh
 
-# verify-changes (just copy the skill file)
+# Other skills (just copy the skill directory)
 mkdir -p ~/.claude/skills/verify-changes
-cp skills/verify-changes/SKILL.md ~/.claude/skills/verify-changes/
+cp -R skills/verify-changes/* ~/.claude/skills/verify-changes/
 
-# clarify-before-implementing
-mkdir -p ~/.claude/skills/clarify-before-implementing
-cp skills/clarify-before-implementing/SKILL.md ~/.claude/skills/clarify-before-implementing/
+# Or copy all skills
+for skill_dir in skills/*; do
+    skill_name=$(basename "$skill_dir")
+    mkdir -p ~/.claude/skills/$skill_name
+    cp -R "$skill_dir"/* ~/.claude/skills/$skill_name/
+done
 ```
 
 ### Statusline
@@ -303,6 +291,26 @@ You are an expert...
 - **Related task**: HANDOFF:other-agent
 ```
 
+## Skill Structure
+
+Each skill lives in its own directory under `skills/` with a `SKILL.md` file:
+
+```yaml
+---
+name: skill-name
+author: Andrew Wilkinson (github.com/ADWilkinson)
+description: When this skill should be used
+disable-model-invocation: true  # Optional: prevents auto-invocation
+allowed-tools: Read, Edit, Bash  # Optional: restrict available tools
+---
+
+# Skill Title
+
+> **Quick Reference**: Brief summary of the workflow
+
+Detailed instructions for executing the skill...
+```
+
 ## Creating Your Own
 
 Templates are included if you want to fork and create your own tools:
@@ -312,11 +320,8 @@ Templates are included if you want to fork and create your own tools:
 cp templates/agent-template.md agents/your-agent-name.md
 
 # Create a new skill
-mkdir -p skills/your-skill/scripts
+mkdir -p skills/your-skill
 cp templates/skill-template.md skills/your-skill/SKILL.md
-
-# Create a new command
-cp templates/command-template.md commands/your-command.md
 ```
 
 Follow existing naming conventions (kebab-case) and include clear descriptions for when Claude should invoke your tool.

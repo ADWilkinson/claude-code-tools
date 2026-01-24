@@ -60,20 +60,18 @@ DEFAULT_AGENTS=(
     "testing-specialist.md"
 )
 
-DEFAULT_COMMANDS=(
-    "deslop.md"
-    "generate-precommit-hooks.md"
-    "lighthouse.md"
-    "minimize-ui.md"
-    "repo-polish.md"
-    "update-claudes.md"
-    "xml.md"
-)
-
 DEFAULT_SKILLS=(
     "clarify-before-implementing"
+    "deslop"
+    "design-audit"
+    "generate-precommit-hooks"
+    "lighthouse"
     "linear"
+    "minimize-ui"
+    "repo-polish"
+    "update-claudes"
     "verify-changes"
+    "xml"
 )
 
 DEFAULT_HOOKS=(
@@ -207,7 +205,6 @@ done
 CLAUDE_DIR="${CLAUDE_DIR/#\~/$HOME}"
 
 AGENTS_RAW=$(fetch_repo_list "agents" "file" 2>/dev/null || true)
-COMMANDS_RAW=$(fetch_repo_list "commands" "file" 2>/dev/null || true)
 SKILLS_RAW=$(fetch_repo_list "skills" "dir" 2>/dev/null || true)
 HOOKS_RAW=$(fetch_repo_list "hooks" "file" 2>/dev/null || true)
 
@@ -215,12 +212,6 @@ if [ -n "$AGENTS_RAW" ]; then
     IFS=$'\n' AGENTS=($AGENTS_RAW)
 else
     AGENTS=("${DEFAULT_AGENTS[@]}")
-fi
-
-if [ -n "$COMMANDS_RAW" ]; then
-    IFS=$'\n' COMMANDS=($COMMANDS_RAW)
-else
-    COMMANDS=("${DEFAULT_COMMANDS[@]}")
 fi
 
 if [ -n "$SKILLS_RAW" ]; then
@@ -264,15 +255,6 @@ for agent in "${AGENTS[@]}"; do
     download_file "$REPO_RAW_BASE/agents/$agent" "$CLAUDE_DIR/agents/$agent"
 done
 print_success "Agents: ${#AGENTS[@]} files"
-
-# Update commands
-print_status "Updating commands..."
-mkdir -p "$CLAUDE_DIR/commands"
-for cmd in "${COMMANDS[@]}"; do
-    [ -z "$cmd" ] && continue
-    download_file "$REPO_RAW_BASE/commands/$cmd" "$CLAUDE_DIR/commands/$cmd"
-done
-print_success "Commands: ${#COMMANDS[@]} files"
 
 # Update skills (only if installed)
 print_status "Updating skills..."

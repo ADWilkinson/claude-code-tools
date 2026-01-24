@@ -1,16 +1,10 @@
 ---
+name: minimize-ui
+author: Andrew Wilkinson (github.com/ADWilkinson)
 description: Ruthlessly simplify interfaces through systematic reduction. Use when UI feels cluttered, has competing elements, or needs production-ready polish. Removes before adding. Less is more.
 allowed-tools: Read, Edit, Write, Bash, Glob, Grep, Skill, TodoWrite, AskUserQuestion
+disable-model-invocation: true
 ---
-
-<!--
-  /minimize-ui
-  Systematic interface minimalization through repeatable 7-phase workflow.
-
-  Author: Andrew Wilkinson
-  GitHub: https://github.com/ADWilkinson
-  X/Twitter: https://x.com/davyjones0x
--->
 
 # /minimize-ui
 
@@ -499,111 +493,6 @@ Throughout execution, maintain clear communication:
 1. **Start**: Show the audit findings organized by impact
 2. **During**: Mark todos as complete, one at a time
 3. **End**: Provide summary with metrics and key decisions
-
-## Example Execution
-
-```
-User: /minimize-ui
-
-Claude: Creating branch minimize-ui/20251230-1640
-        Working on branch: minimize-ui/20251230-1640
-        Will PR back to: main
-
-        I'll systematically simplify your interface. Do you have screenshots
-        or specific areas you want me to focus on?
-
-        1. I have screenshots to share
-        2. Focus on specific path
-        3. Full autonomous audit (I'll run the app and capture screenshots)
-        4. Quick pass (high-impact only, no screenshots)
-
-User: 3
-
-Claude: Starting full autonomous audit...
-
-        [Checks for dev server]
-        Found dev script: next dev
-        Starting dev server...
-        Server ready on port 3000
-
-        [Captures before screenshots]
-        ✓ Homepage (/)
-        ✓ Dashboard (/dashboard)
-        ✓ Settings (/settings)
-        Screenshots saved to .minimize-ui/before/
-
-        [Stops dev server]
-
-        [Maps UI files]
-        Found 8 user-facing screens...
-
-        [Performs systematic audit]
-
-        Audit complete. Here's what I found:
-
-        HIGH IMPACT (Critical path / Maximum noise):
-        1. Homepage hero: 3 competing CTAs → keep 1 primary
-        2. Dashboard sidebar: 12 nav items → group under 4 + "More"
-        3. Color palette: 6 colors → simplify to 2
-
-        MEDIUM IMPACT (Secondary paths / Moderate improvement):
-        4. Form pages: Icons beside text labels → text only
-        5. Card components: Borders everywhere → whitespace
-
-        LOW IMPACT (Polish):
-        6. Typography: 5 sizes → 3 sizes
-        7. Spacing: Align to 8px grid
-
-        Creating execution plan...
-
-        Executing HIGH IMPACT changes...
-        ✓ Removed 2 duplicate signup CTAs
-        ✓ Consolidated sidebar navigation (12 → 4 + More)
-        ✓ Simplified color palette (6 → 2)
-
-        Committed: "refactor(ui): remove competing elements and visual noise (HIGH IMPACT)"
-
-        Executing MEDIUM IMPACT changes...
-        ✓ Replaced icon buttons with text labels
-        ✓ Removed borders, using whitespace
-
-        Committed: "refactor(ui): consolidate actions and improve clarity (MEDIUM IMPACT)"
-
-        Executing POLISH changes...
-        ✓ Consolidated typography scale
-        ✓ Aligned spacing to 8px grid
-
-        Committed: "refactor(ui): polish spacing and typography"
-
-        [Captures after screenshots]
-        Starting dev server...
-        ✓ After screenshots captured
-        Generated comparison.html
-
-        [Creates PR]
-        Pushing to origin...
-        Creating PR...
-
-        PR created: https://github.com/user/repo/pull/42
-
-        Summary:
-        - Branch: minimize-ui/20251230-1640
-        - Commits: 3 (grouped by impact)
-        - UI elements: 47 → 23 (51% reduction)
-        - Color palette: 6 → 2 colors
-        - Typography scale: 5 → 3 sizes
-        - Visual comparison: .minimize-ui/comparison.html
-
-        Review the PR and merge when ready!
-```
-
-## Integration
-
-Works well with:
-- `/frontend-design` - For full redesign after minimalization
-- `/commit` - Already invoked automatically for incremental commits
-- `webapp-testing` skill - For screenshot capture and visual testing
-- `/code-review` - Review the reduction changes before merging
 
 ## Success Criteria
 

@@ -76,19 +76,12 @@ if [ ! -d "$CLAUDE_DIR" ]; then
 fi
 
 AGENTS=()
-COMMANDS=()
 SKILLS=()
 HOOKS=()
 
 if [ -d "agents" ]; then
     for agent_file in agents/*.md; do
         [ -f "$agent_file" ] && AGENTS+=("$(basename "$agent_file")")
-    done
-fi
-
-if [ -d "commands" ]; then
-    for command_file in commands/*.md; do
-        [ -f "$command_file" ] && COMMANDS+=("$(basename "$command_file")")
     done
 fi
 
@@ -106,17 +99,12 @@ fi
 
 # Count what will be removed
 agent_count=0
-command_count=0
 skill_count=0
 hook_count=0
 statusline_exists=false
 
 for agent in "${AGENTS[@]}"; do
     [ -f "$CLAUDE_DIR/agents/$agent" ] && ((agent_count++))
-done
-
-for cmd in "${COMMANDS[@]}"; do
-    [ -f "$CLAUDE_DIR/commands/$cmd" ] && ((command_count++))
 done
 
 for skill in "${SKILLS[@]}"; do
@@ -129,7 +117,7 @@ done
 
 [ -f "$CLAUDE_DIR/flying-dutchman-statusline.sh" ] && statusline_exists=true
 
-total=$((agent_count + command_count + skill_count + hook_count))
+total=$((agent_count + skill_count + hook_count))
 [ "$statusline_exists" = true ] && ((total++))
 
 if [ $total -eq 0 ]; then
@@ -140,7 +128,6 @@ fi
 # Show what will be removed
 echo "Found:"
 [ $agent_count -gt 0 ] && echo "  • $agent_count agents"
-[ $command_count -gt 0 ] && echo "  • $command_count commands"
 [ $skill_count -gt 0 ] && echo "  • $skill_count skills"
 [ $hook_count -gt 0 ] && echo "  • $hook_count hooks"
 [ "$statusline_exists" = true ] && echo "  • Flying Dutchman statusline"
@@ -172,21 +159,6 @@ if [ $agent_count -gt 0 ]; then
             else
                 rm -f "$CLAUDE_DIR/agents/$agent"
                 echo "  Removed: agents/$agent"
-            fi
-        fi
-    done
-fi
-
-# Remove commands
-if [ $command_count -gt 0 ]; then
-    print_status "Removing commands..."
-    for cmd in "${COMMANDS[@]}"; do
-        if [ -f "$CLAUDE_DIR/commands/$cmd" ]; then
-            if [ "$DRY_RUN" = true ]; then
-                echo "  Would remove: commands/$cmd"
-            else
-                rm -f "$CLAUDE_DIR/commands/$cmd"
-                echo "  Removed: commands/$cmd"
             fi
         fi
     done
