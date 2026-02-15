@@ -2,117 +2,192 @@
 
 # Claude Code Statusline - Flying Dutchman Theme
 # Author: Andrew Wilkinson (github.com/ADWilkinson)
-# Features: Current folder, git branch, model name, activity indicators, cost tracking, and lines changed
+#
+# Layout: [where + what] | [health] | [spend + meta]
+# Example: my-project main* [edit] +42 -7 | ctx:63% | $1.47 12m Opus@2.0.80
 
-# Read JSON input from stdin
 input=$(cat)
 
-# Extract data from JSON with error handling
-model_display_name=$(echo "$input" | jq -r '.model.display_name // "Claude"' 2>/dev/null || echo "Claude")
-current_dir=$(echo "$input" | jq -r '.workspace.current_dir // "~"' 2>/dev/null || pwd)
-session_id=$(echo "$input" | jq -r '.session_id // ""' 2>/dev/null)
+# --- Single jq call for all JSON extraction ---
+eval "$(echo "$input" | jq -r '
+  @sh "model_name=\(.model.display_name // "Claude")",
+  @sh "current_dir=\(.workspace.current_dir // "~")",
+  @sh "project_dir=\(.workspace.project_dir // "")",
+  @sh "version=\(.version // "")",
+  @sh "total_cost=\(.cost.total_cost_usd // 0)",
+  @sh "total_duration_ms=\(.cost.total_duration_ms // 0)",
+  @sh "lines_added=\(.cost.total_lines_added // 0)",
+  @sh "lines_removed=\(.cost.total_lines_removed // 0)",
+  @sh "ctx_used_pct=\(.context_window.used_percentage // "")",
+  @sh "ctx_size=\(.context_window.context_window_size // "")",
+  @sh "current_input=\(.context_window.current_usage.input_tokens // "")",
+  @sh "exceeds_200k=\(.exceeds_200k_tokens // false)",
+  @sh "vim_mode=\(.vim.mode // "")",
+  @sh "agent_name=\(.agent.name // "")",
+  @sh "current_activity=\(.current_activity // "")",
+  @sh "active_tools=\((.active_tools // []) | join(","))"
+' 2>/dev/null)"
 
-# Extract cost and metrics
-total_cost=$(echo "$input" | jq -r '.cost.total_usd // 0' 2>/dev/null || echo "0")
-lines_added=$(echo "$input" | jq -r '.cost.lines_added // 0' 2>/dev/null || echo "0")
-lines_removed=$(echo "$input" | jq -r '.cost.lines_removed // 0' 2>/dev/null || echo "0")
+# --- Format helpers (pure bash, no subprocesses) ---
 
-# Get just the current folder name
+format_tokens() {
+    local n="$1"
+    [ -z "$n" ] || [ "$n" = "null" ] && return
+    if [ "$n" -ge 1000000 ] 2>/dev/null; then
+        echo "$((n / 1000000)).$((n % 1000000 / 100000))M"
+    elif [ "$n" -ge 1000 ] 2>/dev/null; then
+        echo "$((n / 1000)).$((n % 1000 / 100))k"
+    else
+        echo "$n"
+    fi
+}
+
+format_duration() {
+    local ms="$1"
+    [ "$ms" = "0" ] || [ -z "$ms" ] || [ "$ms" = "null" ] && return
+    local s=$((ms / 1000))
+    local h=$((s / 3600)) m=$(( (s % 3600) / 60 )) sec=$((s % 60))
+    if [ "$h" -gt 0 ]; then echo "${h}h${m}m"
+    elif [ "$m" -gt 0 ]; then echo "${m}m${sec}s"
+    else echo "${sec}s"
+    fi
+}
+
+# --- Derived values ---
+
 current_folder=$(basename "$current_dir")
 
-# Check for active file being edited (look for recent Edit/Write operations in transcript)
-active_file=""
-if [ -n "$session_id" ] && [ -f "/tmp/claude_active_file_${session_id}" ]; then
-    active_file=$(cat "/tmp/claude_active_file_${session_id}" 2>/dev/null)
-    if [ -n "$active_file" ]; then
-        active_file=" $(basename "$active_file")"
+# Show relative path if we've cd'd into a subdirectory of the project
+display_path="$current_folder"
+if [ -n "$project_dir" ] && [ "$current_dir" != "$project_dir" ]; then
+    relative="${current_dir#"$project_dir"}"
+    if [ "$relative" != "$current_dir" ]; then
+        display_path="$(basename "$project_dir")${relative}"
     fi
 fi
 
-# Get git info if in a repository
+# Git info (branch + dirty indicator + staged indicator)
 git_info=""
 if command -v git >/dev/null 2>&1 && git -C "$current_dir" rev-parse --git-dir >/dev/null 2>&1; then
     branch=$(git -C "$current_dir" branch --show-current 2>/dev/null || git -C "$current_dir" rev-parse --short HEAD 2>/dev/null)
     if [ -n "$branch" ]; then
-        # Check for uncommitted changes and add asterisk if present
-        if git -C "$current_dir" diff-index --quiet HEAD -- 2>/dev/null; then
-            git_info=" git:${branch}"
-        else
-            git_info=" git:${branch}*"
-        fi
+        dirty=""
+        ! git -C "$current_dir" diff-index --quiet HEAD -- 2>/dev/null && dirty="*"
+        ! git -C "$current_dir" diff --cached --quiet 2>/dev/null && dirty="${dirty}+"
+        git_info="${branch}${dirty}"
     fi
 fi
 
+# Activity detection (case statements, zero subprocesses)
+activity=""
+case "$active_tools" in
+    *Bash*)
+        case "$current_activity" in
+            *dev*|*start*|*serve*)                   activity="dev" ;;
+            *build*|*compile*)                        activity="build" ;;
+            *test*|*spec*|*pytest*|*vitest*|*jest*)   activity="test" ;;
+            *deploy*)                                 activity="deploy" ;;
+            *install*|*add*)                          activity="install" ;;
+            *lint*|*format*|*prettier*|*eslint*)      activity="lint" ;;
+            *git*)                                    activity="git" ;;
+            *)                                        activity="bash" ;;
+        esac ;;
+    *Edit*|*Write*|*MultiEdit*)  activity="edit" ;;
+    *Read*)                      activity="read" ;;
+    *Grep*|*Glob*)               activity="search" ;;
+    *Task*)                      activity="agent" ;;
+    *WebSearch*|*WebFetch*)      activity="web" ;;
+    *SendMessage*)               activity="msg" ;;
+    *Notebook*)                  activity="notebook" ;;
+esac
 
-# Extract Claude's current activity from the input
-current_activity=$(echo "$input" | jq -r '.current_activity // ""' 2>/dev/null)
-active_tools=$(echo "$input" | jq -r '.active_tools[]? // ""' 2>/dev/null)
+duration_str=$(format_duration "$total_duration_ms")
 
-# Determine activity icon based on what Claude is currently doing
-activity_icon=""
-if echo "$active_tools" | grep -q "Bash" 2>/dev/null; then
-    # Check what specific bash command is running
-    if echo "$current_activity" | grep -E "npm run dev|yarn dev|pnpm dev|bun dev" >/dev/null 2>&1; then
-        activity_icon=" [dev]"
-    elif echo "$current_activity" | grep -E "npm run build|yarn build|pnpm build|bun build" >/dev/null 2>&1; then
-        activity_icon=" [build]"
-    elif echo "$current_activity" | grep -E "npm test|yarn test|pnpm test|bun test|pytest" >/dev/null 2>&1; then
-        activity_icon=" [test]"
-    elif echo "$current_activity" | grep -E "git" >/dev/null 2>&1; then
-        activity_icon=" [git]"
-    else
-        activity_icon=" [bash]"
-    fi
-elif echo "$active_tools" | grep -q "Edit\|Write\|MultiEdit" 2>/dev/null; then
-    activity_icon=" [edit]"
-elif echo "$active_tools" | grep -q "Read\|Grep\|Glob" 2>/dev/null; then
-    activity_icon=" [search]"
-elif echo "$active_tools" | grep -q "Task" 2>/dev/null; then
-    activity_icon=" [agent]"
-elif echo "$active_tools" | grep -q "WebSearch\|WebFetch" 2>/dev/null; then
-    activity_icon=" [web]"
+# --- Colors ---
+GRN="\033[32m" BLU="\033[34m" CYN="\033[36m" MAG="\033[35m"
+YEL="\033[33m" RED="\033[31m" GRY="\033[90m" WHT="\033[97m"
+BLD="\033[1m" DIM="\033[2m" RST="\033[0m"
+
+# Context color: green < 50%, yellow 50-79%, red 80%+
+ctx_color="$GRN"
+if [ -n "$ctx_used_pct" ] && [ "$ctx_used_pct" != "null" ]; then
+    [ "$ctx_used_pct" -ge 80 ] 2>/dev/null && ctx_color="$RED"
+    [ "$ctx_used_pct" -ge 50 ] 2>/dev/null && [ "$ctx_used_pct" -lt 80 ] 2>/dev/null && ctx_color="$YEL"
 fi
 
-# Define colors using standard ANSI codes for maximum compatibility
-GREEN="\033[32m"
-BLUE="\033[34m"
-CYAN="\033[36m"
-MAGENTA="\033[35m"
-YELLOW="\033[33m"
-GRAY="\033[90m"
-RESET="\033[0m"
+sep=" ${GRY}|${RST} "
 
-# Build compact status line
-output="${BLUE}${current_folder}${RESET}"
+# ============================================================
+# GROUP 1: Where + What
+# ============================================================
+out="${BLU}${BLD}${display_path}${RST}"
 
-# Add file if editing
-if [ -n "$active_file" ]; then
-    output="${output}${GRAY}${active_file}${RESET}"
+[ -n "$git_info" ] && out="${out} ${MAG}${git_info}${RST}"
+
+[ -n "$activity" ] && out="${out} ${WHT}[${activity}]${RST}"
+
+# Vim mode (only when enabled)
+if [ -n "$vim_mode" ] && [ "$vim_mode" != "null" ]; then
+    case "$vim_mode" in
+        INSERT) out="${out} ${GRN}INS${RST}" ;;
+        *)      out="${out} ${CYN}NOR${RST}" ;;
+    esac
 fi
 
-# Add git info
-if [ -n "$git_info" ]; then
-    output="${output} ${MAGENTA}${git_info}${RESET}"
-fi
+# Agent name (only when running as/with agent)
+[ -n "$agent_name" ] && [ "$agent_name" != "null" ] && \
+    out="${out} ${DIM}agent:${RST}${CYN}${agent_name}${RST}"
 
-# Add activity icon if Claude is doing something
-if [ -n "$activity_icon" ]; then
-    output="${output}${activity_icon}"
-fi
-
-# Add lines changed if any modifications made
+# Lines changed (only when non-zero)
 if [ "$lines_added" != "0" ] || [ "$lines_removed" != "0" ]; then
-    output="${output} ${GREEN}+${lines_added}${RESET}/${MAGENTA}-${lines_removed}${RESET}"
+    out="${out} ${GRN}+${lines_added}${RST} ${RED}-${lines_removed}${RST}"
 fi
 
-# Add cost if non-zero (format to 2 decimal places)
+# ============================================================
+# GROUP 2: Context Health
+# ============================================================
+ctx_section=""
+if [ -n "$ctx_used_pct" ] && [ "$ctx_used_pct" != "null" ]; then
+    ctx_section="${ctx_color}ctx:${ctx_used_pct}%${RST}"
+
+    # Show raw token counts only when context is getting full (>= 50%)
+    if [ "$ctx_used_pct" -ge 50 ] 2>/dev/null && [ -n "$current_input" ] && [ "$current_input" != "null" ]; then
+        tok_str=$(format_tokens "$current_input")
+        size_str=$(format_tokens "$ctx_size")
+        [ -n "$size_str" ] && ctx_section="${ctx_section}${GRY}(${tok_str}/${size_str})${RST}"
+    fi
+
+    # Exceeds 200k warning
+    [ "$exceeds_200k" = "true" ] && ctx_section="${ctx_section} ${RED}${BLD}!200k${RST}"
+fi
+
+[ -n "$ctx_section" ] && out="${out}${sep}${ctx_section}"
+
+# ============================================================
+# GROUP 3: Cost + Time + Model
+# ============================================================
+meta=""
+
+# Cost
 if [ "$total_cost" != "0" ] && [ -n "$total_cost" ]; then
     formatted_cost=$(printf "%.2f" "$total_cost" 2>/dev/null || echo "$total_cost")
-    output="${output} ${YELLOW}\$${formatted_cost}${RESET}"
+    meta="${YEL}\$${formatted_cost}${RST}"
 fi
 
-# Add model at the end
-output="${output} ${CYAN}[${model_display_name}]${RESET}"
+# Duration
+if [ -n "$duration_str" ]; then
+    [ -n "$meta" ] && meta="${meta} "
+    meta="${meta}${DIM}${duration_str}${RST}"
+fi
 
-# Use echo with -e flag to interpret escape sequences
-echo -e "$output"
+# Model + version
+model_section="${CYN}${model_name}${RST}"
+[ -n "$version" ] && [ "$version" != "null" ] && \
+    model_section="${model_section}${GRY}@${version}${RST}"
+
+[ -n "$meta" ] && meta="${meta} "
+meta="${meta}${model_section}"
+
+out="${out}${sep}${meta}"
+
+echo -e "$out"
