@@ -328,7 +328,7 @@ Follow existing naming conventions (kebab-case) and include clear descriptions f
 
 ## Author
 
-Andrew Wilkinson ([@davyjones0x](https://x.com/davyjones0x))
+Andrew Wilkinson ([@andrewwilkinson](https://x.com/andrewwilkinson))
 
 ## License
 
