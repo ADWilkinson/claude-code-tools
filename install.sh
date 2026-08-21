@@ -18,6 +18,7 @@ BOLD='\033[1m'
 NC='\033[0m'
 
 CLAUDE_DIR="$HOME/.claude"
+CLAUDE_DIR_EXPLICIT=false
 BACKUP_DIR=""
 BACKUP_CREATED=false
 INSTALL_SUCCESS=false
@@ -69,15 +70,23 @@ detect_platform() {
     # Default to Claude if nothing detected (will create on install)
     DETECTED_PLATFORM="claude"
     CLAUDE_DIR="$HOME/.claude"
-    return 1
+    return 0
 }
 
 print_status() { echo -e "${BLUE}→${NC} $1"; }
 print_success() { echo -e "${GREEN}✓${NC} $1"; }
 print_warning() { echo -e "${YELLOW}!${NC} $1"; }
 print_error() { echo -e "${RED}✗${NC} $1"; }
-print_verbose() { [ "$VERBOSE" = true ] && echo -e "${CYAN}  $1${NC}"; }
-print_dry() { [ "$DRY_RUN" = true ] && echo -e "${YELLOW}[DRY RUN]${NC} $1"; }
+print_verbose() {
+    if [ "$VERBOSE" = true ]; then
+        echo -e "${CYAN}  $1${NC}"
+    fi
+}
+print_dry() {
+    if [ "$DRY_RUN" = true ]; then
+        echo -e "${YELLOW}[DRY RUN]${NC} $1"
+    fi
+}
 
 cleanup() {
     local exit_code=$?
@@ -128,12 +137,20 @@ rollback_installation() {
 }
 
 check_claude_installation() {
-    detect_platform
+    if [ "$CLAUDE_DIR_EXPLICIT" = true ]; then
+        DETECTED_PLATFORM="custom"
+    else
+        detect_platform
+    fi
 
     if [ ! -d "$CLAUDE_DIR" ]; then
         print_warning "No AI coding assistant directory found"
-        print_status "Creating directory at $CLAUDE_DIR"
-        mkdir -p "$CLAUDE_DIR"
+        if [ "$DRY_RUN" = true ]; then
+            print_dry "Would create directory at $CLAUDE_DIR"
+        else
+            print_status "Creating directory at $CLAUDE_DIR"
+            mkdir -p "$CLAUDE_DIR"
+        fi
     fi
 
     case "$DETECTED_PLATFORM" in
@@ -151,6 +168,9 @@ check_claude_installation() {
             ;;
         continue)
             print_success "Detected Continue at $CLAUDE_DIR"
+            ;;
+        custom)
+            print_success "Using custom directory at $CLAUDE_DIR"
             ;;
         *)
             print_success "Using $CLAUDE_DIR"
@@ -521,6 +541,7 @@ main() {
         case $1 in
             --claude-dir)
                 CLAUDE_DIR="$2"
+                CLAUDE_DIR_EXPLICIT=true
                 shift 2
                 ;;
             --dry-run)
