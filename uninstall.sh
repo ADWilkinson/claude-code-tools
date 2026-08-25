@@ -104,21 +104,31 @@ hook_count=0
 statusline_exists=false
 
 for agent in "${AGENTS[@]}"; do
-    [ -f "$CLAUDE_DIR/agents/$agent" ] && ((agent_count++))
+    if [ -f "$CLAUDE_DIR/agents/$agent" ]; then
+        agent_count=$((agent_count + 1))
+    fi
 done
 
 for skill in "${SKILLS[@]}"; do
-    [ -d "$CLAUDE_DIR/skills/$skill" ] && ((skill_count++))
+    if [ -d "$CLAUDE_DIR/skills/$skill" ]; then
+        skill_count=$((skill_count + 1))
+    fi
 done
 
 for hook in "${HOOKS[@]}"; do
-    [ -f "$CLAUDE_DIR/hooks/$hook" ] && ((hook_count++))
+    if [ -f "$CLAUDE_DIR/hooks/$hook" ]; then
+        hook_count=$((hook_count + 1))
+    fi
 done
 
-[ -f "$CLAUDE_DIR/flying-dutchman-statusline.sh" ] && statusline_exists=true
+if [ -f "$CLAUDE_DIR/flying-dutchman-statusline.sh" ]; then
+    statusline_exists=true
+fi
 
 total=$((agent_count + skill_count + hook_count))
-[ "$statusline_exists" = true ] && ((total++))
+if [ "$statusline_exists" = true ]; then
+    total=$((total + 1))
+fi
 
 if [ $total -eq 0 ]; then
     print_warning "No Claude Code Tools found to uninstall"

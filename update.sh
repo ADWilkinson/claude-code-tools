@@ -28,7 +28,11 @@ print_status() { echo -e "${BLUE}→${NC} $1"; }
 print_success() { echo -e "${GREEN}✓${NC} $1"; }
 print_warning() { echo -e "${YELLOW}!${NC} $1"; }
 print_error() { echo -e "${RED}✗${NC} $1"; }
-print_verbose() { [ "$VERBOSE" = true ] && echo -e "  $1"; }
+print_verbose() {
+    if [ "$VERBOSE" = true ]; then
+        echo -e "  $1"
+    fi
+}
 
 show_help() {
     echo "Claude Code Tools Updater"
