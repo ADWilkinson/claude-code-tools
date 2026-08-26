@@ -251,14 +251,21 @@ fi
 updated=0
 failed=0
 
-# Update agents
+# Update agents (only if installed)
 print_status "Updating agents..."
-mkdir -p "$CLAUDE_DIR/agents"
-for agent in "${AGENTS[@]}"; do
-    [ -z "$agent" ] && continue
-    download_file "$REPO_RAW_BASE/agents/$agent" "$CLAUDE_DIR/agents/$agent"
-done
-print_success "Agents: ${#AGENTS[@]} files"
+if [ -d "$CLAUDE_DIR/agents" ]; then
+    for agent in "${AGENTS[@]}"; do
+        [ -z "$agent" ] && continue
+        if [ -f "$CLAUDE_DIR/agents/$agent" ]; then
+            download_file "$REPO_RAW_BASE/agents/$agent" "$CLAUDE_DIR/agents/$agent"
+        else
+            print_verbose "Agent not installed, skipping: $agent"
+        fi
+    done
+else
+    print_verbose "Agents directory not found, skipping"
+fi
+print_success "Agents: ${#AGENTS[@]} listed"
 
 # Update skills (only if installed)
 print_status "Updating skills..."
