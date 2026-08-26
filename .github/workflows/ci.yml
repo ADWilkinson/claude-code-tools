@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Shell syntax
+        run: |
+          bash --version | head -1
+          for f in $(git ls-files '*.sh'); do
+              bash -n "$f" || exit 1
+          done
+
+      - name: Install tests
+        run: bash tests/install-test.sh
+
+      - name: Update and uninstall tests
+        run: bash tests/update-uninstall-test.sh
