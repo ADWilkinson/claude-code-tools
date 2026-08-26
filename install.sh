@@ -137,11 +137,7 @@ rollback_installation() {
 }
 
 check_claude_installation() {
-    if [ "$CLAUDE_DIR_EXPLICIT" = true ]; then
-        DETECTED_PLATFORM="custom"
-    else
-        detect_platform
-    fi
+    detect_platform
 
     if [ ! -d "$CLAUDE_DIR" ]; then
         print_warning "No AI coding assistant directory found"
