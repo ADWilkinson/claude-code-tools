@@ -1,5 +1,6 @@
 # Claude Code Tools
 
+[![CI](https://github.com/ADWilkinson/claude-code-tools/actions/workflows/ci.yml/badge.svg)](https://github.com/ADWilkinson/claude-code-tools/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub last commit](https://img.shields.io/github/last-commit/ADWilkinson/claude-code-tools)](https://github.com/ADWilkinson/claude-code-tools/commits/main)
 [![GitHub stars](https://img.shields.io/github/stars/ADWilkinson/claude-code-tools?style=social)](https://github.com/ADWilkinson/claude-code-tools)
@@ -325,6 +326,25 @@ cp templates/skill-template.md skills/your-skill/SKILL.md
 ```
 
 Follow existing naming conventions (kebab-case) and include clear descriptions for when Claude should invoke your tool.
+
+## Testing
+
+The installer scripts are covered by two shell suites. Both are hermetic: they run
+against a temporary directory and never touch your real `~/.claude`.
+
+```bash
+# Installer destination handling
+bash tests/install-test.sh
+
+# Update and uninstall dry-run behaviour
+bash tests/update-uninstall-test.sh
+
+# Syntax-check every tracked shell script
+for f in $(git ls-files '*.sh'); do bash -n "$f" || exit 1; done
+```
+
+CI runs all three on `ubuntu-latest` and `macos-latest` for every pull request and
+every push to `main`.
 
 ## Author
 
