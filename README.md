@@ -179,7 +179,9 @@ Pull the latest versions without re-cloning:
 ./update.sh --claude-dir /path/to/.claude
 ```
 
-Agents and skills are refreshed; hooks and statusline are updated when installed.
+Agents, skills, hooks, and statusline are each refreshed only where they are
+already installed. `update.sh` never adds a component you skipped at install
+time, and never restores one you deliberately deleted.
 
 ## Uninstall
 
