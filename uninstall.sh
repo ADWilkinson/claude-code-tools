@@ -94,6 +94,12 @@ done
 
 CLAUDE_DIR="${CLAUDE_DIR/#\~/$HOME}"
 
+# The removal list comes from the checkout this script lives in, not from the
+# caller's working directory. Resolving it relative to $PWD made
+# `bash /path/to/claude-code-tools/uninstall.sh` report a clean uninstall while
+# leaving every agent, skill and hook in place.
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 echo
 echo -e "${BOLD}Claude Code Tools Uninstaller${NC}"
 echo "=============================="
@@ -104,24 +110,32 @@ if [ ! -d "$CLAUDE_DIR" ]; then
     exit 1
 fi
 
+# Without the source tree there is nothing to match against, and an empty list
+# would look identical to "nothing is installed". Say so instead of exiting 0.
+if [ ! -d "$SCRIPT_DIR/agents" ] && [ ! -d "$SCRIPT_DIR/skills" ] && [ ! -d "$SCRIPT_DIR/hooks" ]; then
+    print_error "No agents/, skills/ or hooks/ directory found in $SCRIPT_DIR"
+    print_error "Run uninstall.sh from a complete claude-code-tools checkout"
+    exit 1
+fi
+
 AGENTS=()
 SKILLS=()
 HOOKS=()
 
-if [ -d "agents" ]; then
-    for agent_file in agents/*.md; do
+if [ -d "$SCRIPT_DIR/agents" ]; then
+    for agent_file in "$SCRIPT_DIR"/agents/*.md; do
         [ -f "$agent_file" ] && AGENTS+=("$(basename "$agent_file")")
     done
 fi
 
-if [ -d "skills" ]; then
-    for skill_dir in skills/*; do
+if [ -d "$SCRIPT_DIR/skills" ]; then
+    for skill_dir in "$SCRIPT_DIR"/skills/*; do
         [ -d "$skill_dir" ] && SKILLS+=("$(basename "$skill_dir")")
     done
 fi
 
-if [ -d "hooks" ]; then
-    for hook_file in hooks/*; do
+if [ -d "$SCRIPT_DIR/hooks" ]; then
+    for hook_file in "$SCRIPT_DIR"/hooks/*; do
         [ -f "$hook_file" ] && HOOKS+=("$(basename "$hook_file")")
     done
 fi
