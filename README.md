@@ -230,7 +230,7 @@ done
 cp statusline/flying-dutchman-statusline.sh ~/.claude/
 chmod +x ~/.claude/flying-dutchman-statusline.sh
 # Add to ~/.claude/settings.json:
-# "statusline": "~/.claude/flying-dutchman-statusline.sh"
+# "statusLine": { "type": "command", "command": "~/.claude/flying-dutchman-statusline.sh" }
 ```
 
 ### Hooks
