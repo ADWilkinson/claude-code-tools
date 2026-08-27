@@ -107,4 +107,52 @@ if command -v jq >/dev/null 2>&1; then
     fi
 fi
 
+# install.sh must install the checkout it lives in no matter where it is called
+# from. Reading agents/, skills/ and hooks/ from $PWD let an out-of-tree
+# invocation copy whatever happened to sit in the caller's directory and still
+# print "Installation complete!".
+DECOY_DIR="$TEST_DIR/decoy"
+OUT_OF_TREE_DIR="$TEST_DIR/out-of-tree-target"
+HOOK_NAME="auto-format.sh"
+mkdir -p "$DECOY_DIR/agents" "$DECOY_DIR/hooks"
+echo "not a real agent" > "$DECOY_DIR/agents/decoy-agent.md"
+echo "#!/bin/bash" > "$DECOY_DIR/hooks/decoy-hook.sh"
+
+(cd "$DECOY_DIR" && HOME="$FAKE_HOME" "$REPO_DIR/install.sh" \
+    --no-skills \
+    --no-statusline \
+    --claude-dir "$OUT_OF_TREE_DIR" >/dev/null)
+
+test -f "$OUT_OF_TREE_DIR/agents/backend-developer.md"
+test -f "$OUT_OF_TREE_DIR/hooks/$HOOK_NAME"
+if [ -e "$OUT_OF_TREE_DIR/agents/decoy-agent.md" ]; then
+    echo "install copied an agent from the caller's working directory" >&2
+    exit 1
+fi
+if [ -e "$OUT_OF_TREE_DIR/hooks/decoy-hook.sh" ]; then
+    echo "install copied a hook from the caller's working directory" >&2
+    exit 1
+fi
+
+# A copy of the script with no source tree beside it has nothing to install.
+# It must say so rather than report a successful empty install.
+DETACHED_DIR="$TEST_DIR/detached"
+DETACHED_TARGET="$TEST_DIR/detached-install-target"
+mkdir -p "$DETACHED_DIR"
+cp "$REPO_DIR/install.sh" "$DETACHED_DIR/install.sh"
+
+detached_status=0
+detached_output=$(cd "$REPO_DIR" && HOME="$FAKE_HOME" "$DETACHED_DIR/install.sh" \
+    --claude-dir "$DETACHED_TARGET" 2>&1) || detached_status=$?
+
+if [ "$detached_status" -eq 0 ]; then
+    echo "detached install reported success with no source tree" >&2
+    exit 1
+fi
+grep -Fq "Run install.sh from a complete claude-code-tools checkout" <<< "$detached_output"
+if [ -e "$DETACHED_TARGET" ]; then
+    echo "detached install created the destination directory" >&2
+    exit 1
+fi
+
 echo "install tests passed"
