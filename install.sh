@@ -17,6 +17,12 @@ CYAN='\033[0;36m'
 BOLD='\033[1m'
 NC='\033[0m'
 
+# Everything we install is read from the checkout this script lives in, never
+# from the caller's working directory. Resolving the payload relative to $PWD
+# let `bash /path/to/claude-code-tools/install.sh` copy whatever agents/, skills/
+# or hooks/ happened to sit in $PWD and still report a successful install.
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 CLAUDE_DIR="$HOME/.claude"
 CLAUDE_DIR_EXPLICIT=false
 BACKUP_DIR=""
@@ -219,8 +225,8 @@ backup_existing() {
 
     local files_backed_up=0
 
-    if [ "$INSTALL_AGENTS" = true ] && [ -d "agents" ]; then
-        for agent_file in agents/*.md; do
+    if [ "$INSTALL_AGENTS" = true ] && [ -d "$SCRIPT_DIR/agents" ]; then
+        for agent_file in "$SCRIPT_DIR"/agents/*.md; do
             if [ -f "$agent_file" ]; then
                 agent_name=$(basename "$agent_file")
                 echo "Agent: $agent_name" >> "$BACKUP_DIR/metadata/manifest.txt"
@@ -233,8 +239,8 @@ backup_existing() {
         done
     fi
 
-    if [ "$INSTALL_SKILLS" = true ] && [ -d "skills" ]; then
-        for skill_dir in skills/*; do
+    if [ "$INSTALL_SKILLS" = true ] && [ -d "$SCRIPT_DIR/skills" ]; then
+        for skill_dir in "$SCRIPT_DIR"/skills/*; do
             if [ -d "$skill_dir" ]; then
                 skill_name=$(basename "$skill_dir")
                 echo "Skill: $skill_name" >> "$BACKUP_DIR/metadata/manifest.txt"
@@ -247,8 +253,8 @@ backup_existing() {
         done
     fi
 
-    if [ "$INSTALL_HOOKS" = true ] && [ -d "hooks" ]; then
-        for hook_file in hooks/*; do
+    if [ "$INSTALL_HOOKS" = true ] && [ -d "$SCRIPT_DIR/hooks" ]; then
+        for hook_file in "$SCRIPT_DIR"/hooks/*; do
             if [ -f "$hook_file" ]; then
                 hook_name=$(basename "$hook_file")
                 echo "Hook: $hook_name" >> "$BACKUP_DIR/metadata/manifest.txt"
@@ -285,13 +291,13 @@ install_agents() {
 
     print_status "Installing agents..."
 
-    if [ ! -d "agents" ]; then
+    if [ ! -d "$SCRIPT_DIR/agents" ]; then
         print_warning "No agents directory found, skipping"
         return
     fi
 
     local count=0
-    for agent_file in agents/*.md; do
+    for agent_file in "$SCRIPT_DIR"/agents/*.md; do
         if [ -f "$agent_file" ]; then
             agent_name=$(basename "$agent_file" .md)
             if [ "$DRY_RUN" = true ]; then
@@ -314,13 +320,13 @@ install_skills() {
 
     print_status "Installing skills..."
 
-    if [ ! -d "skills" ]; then
+    if [ ! -d "$SCRIPT_DIR/skills" ]; then
         print_warning "No skills directory found, skipping"
         return
     fi
 
     local count=0
-    for skill_dir in skills/*; do
+    for skill_dir in "$SCRIPT_DIR"/skills/*; do
         if [ -d "$skill_dir" ]; then
             skill_name=$(basename "$skill_dir")
             if [ "$DRY_RUN" = true ]; then
@@ -357,13 +363,13 @@ install_hooks() {
 
     print_status "Installing hooks..."
 
-    if [ ! -d "hooks" ]; then
+    if [ ! -d "$SCRIPT_DIR/hooks" ]; then
         print_warning "No hooks directory found, skipping"
         return
     fi
 
     local count=0
-    for hook_file in hooks/*; do
+    for hook_file in "$SCRIPT_DIR"/hooks/*; do
         if [ -f "$hook_file" ]; then
             hook_name=$(basename "$hook_file")
             if [ "$DRY_RUN" = true ]; then
@@ -390,7 +396,6 @@ install_statusline() {
 
     print_status "Installing statusline..."
 
-    SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
     STATUSLINE_SOURCE="$SCRIPT_DIR/statusline/flying-dutchman-statusline.sh"
     STATUSLINE_DEST="$CLAUDE_DIR/flying-dutchman-statusline.sh"
 
@@ -438,9 +443,9 @@ show_preview() {
     echo -e "${BOLD}Files to install:${NC}"
     echo
 
-    if [ "$INSTALL_AGENTS" = true ] && [ -d "agents" ]; then
+    if [ "$INSTALL_AGENTS" = true ] && [ -d "$SCRIPT_DIR/agents" ]; then
         echo "  Agents:"
-        for agent_file in agents/*.md; do
+        for agent_file in "$SCRIPT_DIR"/agents/*.md; do
             if [ -f "$agent_file" ]; then
                 agent_name=$(basename "$agent_file" .md)
                 # Check if opus model
@@ -454,9 +459,9 @@ show_preview() {
         echo
     fi
 
-    if [ "$INSTALL_SKILLS" = true ] && [ -d "skills" ]; then
+    if [ "$INSTALL_SKILLS" = true ] && [ -d "$SCRIPT_DIR/skills" ]; then
         echo "  Skills:"
-        for skill_dir in skills/*; do
+        for skill_dir in "$SCRIPT_DIR"/skills/*; do
             if [ -d "$skill_dir" ]; then
                 skill_name=$(basename "$skill_dir")
                 if [ -f "$skill_dir/install.sh" ]; then
@@ -469,9 +474,9 @@ show_preview() {
         echo
     fi
 
-    if [ "$INSTALL_HOOKS" = true ] && [ -d "hooks" ]; then
+    if [ "$INSTALL_HOOKS" = true ] && [ -d "$SCRIPT_DIR/hooks" ]; then
         echo "  Hooks:"
-        for hook_file in hooks/*; do
+        for hook_file in "$SCRIPT_DIR"/hooks/*; do
             if [ -f "$hook_file" ]; then
                 echo "    $(basename "$hook_file")"
             fi
@@ -479,7 +484,7 @@ show_preview() {
         echo
     fi
 
-    if [ "$INSTALL_STATUSLINE" = true ] && [ -f "statusline/flying-dutchman-statusline.sh" ]; then
+    if [ "$INSTALL_STATUSLINE" = true ] && [ -f "$SCRIPT_DIR/statusline/flying-dutchman-statusline.sh" ]; then
         echo "  Statusline:"
         echo "    flying-dutchman-statusline.sh"
         echo
@@ -618,9 +623,11 @@ main() {
 
     CLAUDE_DIR="${CLAUDE_DIR/#\~/$HOME}"
 
-    # Check if we're in the right directory
-    if [ ! -d "agents" ] && [ ! -d "skills" ] && [ ! -d "hooks" ]; then
-        print_error "Run this script from the claude-code-tools directory"
+    # Without the source tree beside the script there is nothing to install, and
+    # an empty payload would still print "Installation complete!".
+    if [ ! -d "$SCRIPT_DIR/agents" ] && [ ! -d "$SCRIPT_DIR/skills" ] && [ ! -d "$SCRIPT_DIR/hooks" ]; then
+        print_error "No agents/, skills/ or hooks/ directory found in $SCRIPT_DIR"
+        print_error "Run install.sh from a complete claude-code-tools checkout"
         exit 1
     fi
 
