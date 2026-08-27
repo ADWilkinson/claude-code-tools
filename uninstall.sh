@@ -23,6 +23,35 @@ print_success() { echo -e "${GREEN}✓${NC} $1"; }
 print_warning() { echo -e "${YELLOW}!${NC} $1"; }
 print_error() { echo -e "${RED}✗${NC} $1"; }
 
+# Drop the statusLine block from settings.json, but only when it still points at
+# the script we installed. A statusLine the user pointed elsewhere is left alone.
+remove_statusline_setting() {
+    local settings_file="$CLAUDE_DIR/settings.json"
+
+    if [ ! -f "$settings_file" ] || ! command -v jq >/dev/null 2>&1; then
+        print_warning "Remember to remove 'statusLine' from $settings_file"
+        return
+    fi
+
+    if ! jq -e '(.statusLine.command // "") | test("flying-dutchman-statusline\\.sh")' \
+         "$settings_file" >/dev/null 2>&1; then
+        return
+    fi
+
+    if [ "$DRY_RUN" = true ]; then
+        echo "  Would remove: statusLine from settings.json"
+        return
+    fi
+
+    if jq 'del(.statusLine)' "$settings_file" > "${settings_file}.tmp"; then
+        mv "${settings_file}.tmp" "$settings_file"
+        echo "  Removed: statusLine from settings.json"
+    else
+        rm -f "${settings_file}.tmp"
+        print_warning "Remember to remove 'statusLine' from $settings_file"
+    fi
+}
+
 show_help() {
     echo "Claude Code Tools Uninstaller"
     echo
@@ -213,7 +242,7 @@ if [ "$statusline_exists" = true ]; then
         rm -f "$CLAUDE_DIR/flying-dutchman-statusline.sh"
         echo "  Removed: flying-dutchman-statusline.sh"
     fi
-    print_warning "Remember to remove 'statusline' from $CLAUDE_DIR/settings.json"
+    remove_statusline_setting
 fi
 
 echo

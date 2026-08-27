@@ -409,14 +409,27 @@ install_statusline() {
 
     SETTINGS_FILE="$CLAUDE_DIR/settings.json"
 
-    if [ -f "$SETTINGS_FILE" ] && command -v jq >/dev/null 2>&1; then
+    if ! command -v jq >/dev/null 2>&1; then
+        print_warning "jq not found, add to $SETTINGS_FILE manually:"
+        echo "    \"statusLine\": { \"type\": \"command\", \"command\": \"$STATUSLINE_DEST\" }"
+        return
+    fi
+
+    if [ -f "$SETTINGS_FILE" ]; then
         cp "$SETTINGS_FILE" "${SETTINGS_FILE}.backup"
-        jq --arg statusline "$STATUSLINE_DEST" \
-           '.statusline = $statusline' "$SETTINGS_FILE" > "${SETTINGS_FILE}.tmp" && \
-           mv "${SETTINGS_FILE}.tmp" "$SETTINGS_FILE"
-        print_success "Configured statusline in settings.json"
     else
-        print_warning "Add to settings.json: \"statusline\": \"$STATUSLINE_DEST\""
+        echo '{}' > "$SETTINGS_FILE"
+    fi
+
+    if jq --arg command "$STATUSLINE_DEST" \
+       '.statusLine = {type: "command", command: $command}' \
+       "$SETTINGS_FILE" > "${SETTINGS_FILE}.tmp"; then
+        mv "${SETTINGS_FILE}.tmp" "$SETTINGS_FILE"
+        print_success "Configured statusLine in settings.json"
+    else
+        rm -f "${SETTINGS_FILE}.tmp"
+        print_warning "Could not update $SETTINGS_FILE, add manually:"
+        echo "    \"statusLine\": { \"type\": \"command\", \"command\": \"$STATUSLINE_DEST\" }"
     fi
 }
 

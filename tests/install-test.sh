@@ -60,4 +60,51 @@ if [ -e "$DETECTED_DIR/agents/backend-developer.md" ]; then
     exit 1
 fi
 
+# Claude Code only reads the statusLine object form; a bare "statusline" string
+# is ignored, so the installer must write the schema the app actually parses.
+if command -v jq >/dev/null 2>&1; then
+    STATUSLINE_DIR="$TEST_DIR/statusline-target"
+    mkdir -p "$STATUSLINE_DIR"
+    echo '{"model": "opus"}' > "$STATUSLINE_DIR/settings.json"
+
+    (cd "$REPO_DIR" && HOME="$FAKE_HOME" ./install.sh \
+        --no-skills \
+        --no-hooks \
+        --claude-dir "$STATUSLINE_DIR" >/dev/null)
+
+    test -x "$STATUSLINE_DIR/flying-dutchman-statusline.sh"
+
+    if ! jq -e '.statusLine.type == "command"' "$STATUSLINE_DIR/settings.json" >/dev/null; then
+        echo "install did not write a statusLine command entry" >&2
+        exit 1
+    fi
+    if ! jq -e --arg dest "$STATUSLINE_DIR/flying-dutchman-statusline.sh" \
+         '.statusLine.command == $dest' "$STATUSLINE_DIR/settings.json" >/dev/null; then
+        echo "statusLine.command does not point at the installed script" >&2
+        exit 1
+    fi
+    if jq -e 'has("statusline")' "$STATUSLINE_DIR/settings.json" >/dev/null; then
+        echo "install wrote the legacy lowercase statusline key" >&2
+        exit 1
+    fi
+    # Unrelated settings must survive the rewrite.
+    if ! jq -e '.model == "opus"' "$STATUSLINE_DIR/settings.json" >/dev/null; then
+        echo "install clobbered unrelated settings.json keys" >&2
+        exit 1
+    fi
+
+    # A fresh install with no settings.json must still end up configured.
+    FRESH_SETTINGS_DIR="$TEST_DIR/statusline-fresh"
+    (cd "$REPO_DIR" && HOME="$FAKE_HOME" ./install.sh \
+        --no-skills \
+        --no-hooks \
+        --claude-dir "$FRESH_SETTINGS_DIR" >/dev/null)
+
+    if ! jq -e --arg dest "$FRESH_SETTINGS_DIR/flying-dutchman-statusline.sh" \
+         '.statusLine.command == $dest' "$FRESH_SETTINGS_DIR/settings.json" >/dev/null; then
+        echo "install did not create settings.json with a statusLine entry" >&2
+        exit 1
+    fi
+fi
+
 echo "install tests passed"

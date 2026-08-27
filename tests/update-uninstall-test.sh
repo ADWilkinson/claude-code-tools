@@ -68,4 +68,50 @@ if [ ! -f "$UNINSTALL_DIR/agents/$AGENT_NAME" ]; then
     exit 1
 fi
 
+# Uninstall must clear the statusLine entry it installed, or Claude Code keeps
+# invoking a script that is no longer on disk.
+if command -v jq >/dev/null 2>&1; then
+    STATUSLINE_DIR="$TEST_DIR/statusline-uninstall"
+    mkdir -p "$STATUSLINE_DIR"
+    touch "$STATUSLINE_DIR/flying-dutchman-statusline.sh"
+    jq -n --arg dest "$STATUSLINE_DIR/flying-dutchman-statusline.sh" \
+        '{model: "opus", statusLine: {type: "command", command: $dest}}' \
+        > "$STATUSLINE_DIR/settings.json"
+
+    statusline_dry_output=$(cd "$REPO_DIR" && ./uninstall.sh --dry-run --force \
+        --claude-dir "$STATUSLINE_DIR")
+
+    grep -Fq "Would remove: statusLine from settings.json" <<< "$statusline_dry_output"
+    if ! jq -e 'has("statusLine")' "$STATUSLINE_DIR/settings.json" >/dev/null; then
+        echo "uninstall dry-run edited settings.json" >&2
+        exit 1
+    fi
+
+    (cd "$REPO_DIR" && ./uninstall.sh --force --claude-dir "$STATUSLINE_DIR" >/dev/null)
+
+    if jq -e 'has("statusLine")' "$STATUSLINE_DIR/settings.json" >/dev/null; then
+        echo "uninstall left a statusLine pointing at a deleted script" >&2
+        exit 1
+    fi
+    if ! jq -e '.model == "opus"' "$STATUSLINE_DIR/settings.json" >/dev/null; then
+        echo "uninstall clobbered unrelated settings.json keys" >&2
+        exit 1
+    fi
+
+    # A statusLine the user pointed at their own script is not ours to remove.
+    FOREIGN_DIR="$TEST_DIR/statusline-foreign"
+    mkdir -p "$FOREIGN_DIR"
+    touch "$FOREIGN_DIR/flying-dutchman-statusline.sh"
+    jq -n '{statusLine: {type: "command", command: "~/my-own-statusline.sh"}}' \
+        > "$FOREIGN_DIR/settings.json"
+
+    (cd "$REPO_DIR" && ./uninstall.sh --force --claude-dir "$FOREIGN_DIR" >/dev/null)
+
+    if ! jq -e '.statusLine.command == "~/my-own-statusline.sh"' \
+         "$FOREIGN_DIR/settings.json" >/dev/null; then
+        echo "uninstall removed a statusLine it did not install" >&2
+        exit 1
+    fi
+fi
+
 echo "update/uninstall tests passed"
