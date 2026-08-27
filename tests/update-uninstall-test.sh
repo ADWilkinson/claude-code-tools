@@ -114,4 +114,46 @@ if command -v jq >/dev/null 2>&1; then
     fi
 fi
 
+# uninstall.sh must remove what it installed no matter where it is called from.
+# Building the removal list from $PWD made an out-of-tree invocation print
+# "Uninstall complete" while leaving every agent and hook on disk.
+CWD_DIR="$TEST_DIR/uninstall-from-elsewhere"
+HOOK_NAME="auto-format.sh"
+mkdir -p "$CWD_DIR/agents" "$CWD_DIR/hooks"
+cp "$REPO_DIR/agents/$AGENT_NAME" "$CWD_DIR/agents/$AGENT_NAME"
+cp "$REPO_DIR/hooks/$HOOK_NAME" "$CWD_DIR/hooks/$HOOK_NAME"
+
+(cd "$TEST_DIR" && "$REPO_DIR/uninstall.sh" --force --claude-dir "$CWD_DIR" >/dev/null)
+
+if [ -e "$CWD_DIR/agents/$AGENT_NAME" ]; then
+    echo "uninstall run outside the repo left an agent installed" >&2
+    exit 1
+fi
+if [ -e "$CWD_DIR/hooks/$HOOK_NAME" ]; then
+    echo "uninstall run outside the repo left a hook installed" >&2
+    exit 1
+fi
+
+# A copy of the script with no source tree beside it cannot know what to remove.
+# It must say so rather than exit 0 on an empty list.
+DETACHED_DIR="$TEST_DIR/detached"
+DETACHED_TARGET="$TEST_DIR/detached-target"
+mkdir -p "$DETACHED_DIR" "$DETACHED_TARGET/agents"
+cp "$REPO_DIR/uninstall.sh" "$DETACHED_DIR/uninstall.sh"
+cp "$REPO_DIR/agents/$AGENT_NAME" "$DETACHED_TARGET/agents/$AGENT_NAME"
+
+detached_status=0
+detached_output=$("$DETACHED_DIR/uninstall.sh" --force --claude-dir "$DETACHED_TARGET" 2>&1) \
+    || detached_status=$?
+
+if [ "$detached_status" -eq 0 ]; then
+    echo "detached uninstall reported success with no source tree" >&2
+    exit 1
+fi
+grep -Fq "Run uninstall.sh from a complete claude-code-tools checkout" <<< "$detached_output"
+if [ ! -f "$DETACHED_TARGET/agents/$AGENT_NAME" ]; then
+    echo "detached uninstall deleted files it could not identify" >&2
+    exit 1
+fi
+
 echo "update/uninstall tests passed"
