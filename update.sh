@@ -96,6 +96,11 @@ fetch_repo_list() {
     fi
 }
 
+# Returns non-zero on a failed download and counts it in $failed. Callers must
+# tolerate that status: under `set -e` a bare call aborted the whole updater on
+# the first 404 or network blip, so every later agent, skill, hook and the
+# statusline were skipped, the summary never printed, and without -v the run
+# ended silently on exit 1.
 download_file() {
     local url="$1"
     local dest="$2"
@@ -138,7 +143,7 @@ update_skill() {
     local IFS=$'\n'
     for file in $root_files; do
         [ -z "$file" ] && continue
-        download_file "$REPO_RAW_BASE/skills/$skill/$file" "$skill_dir/$file"
+        download_file "$REPO_RAW_BASE/skills/$skill/$file" "$skill_dir/$file" || continue
         if [ "$file" = "install.sh" ] && [ "$DRY_RUN" = false ]; then
             chmod +x "$skill_dir/$file"
         fi
@@ -153,7 +158,7 @@ update_skill() {
             if [ -n "$sub_files" ]; then
                 for file in $sub_files; do
                     [ -z "$file" ] && continue
-                    download_file "$REPO_RAW_BASE/skills/$skill/$subdir/$file" "$skill_dir/$subdir/$file"
+                    download_file "$REPO_RAW_BASE/skills/$skill/$subdir/$file" "$skill_dir/$subdir/$file" || true
                 done
             fi
         done
@@ -265,7 +270,7 @@ if [ -d "$CLAUDE_DIR/agents" ]; then
     for agent in "${AGENTS[@]}"; do
         [ -z "$agent" ] && continue
         if [ -f "$CLAUDE_DIR/agents/$agent" ]; then
-            download_file "$REPO_RAW_BASE/agents/$agent" "$CLAUDE_DIR/agents/$agent"
+            download_file "$REPO_RAW_BASE/agents/$agent" "$CLAUDE_DIR/agents/$agent" || true
         else
             print_verbose "Agent not installed, skipping: $agent"
         fi
@@ -293,7 +298,7 @@ if [ -d "$CLAUDE_DIR/hooks" ]; then
     for hook in "${HOOKS[@]}"; do
         [ -z "$hook" ] && continue
         if [ -f "$CLAUDE_DIR/hooks/$hook" ]; then
-            download_file "$REPO_RAW_BASE/hooks/$hook" "$CLAUDE_DIR/hooks/$hook"
+            download_file "$REPO_RAW_BASE/hooks/$hook" "$CLAUDE_DIR/hooks/$hook" || true
             if [ "$DRY_RUN" = false ]; then
                 chmod +x "$CLAUDE_DIR/hooks/$hook" || true
             fi
@@ -309,7 +314,7 @@ print_success "Hooks: ${#HOOKS[@]} listed"
 # Update statusline (only if installed)
 print_status "Updating statusline..."
 if [ -f "$CLAUDE_DIR/flying-dutchman-statusline.sh" ]; then
-    download_file "$REPO_RAW_BASE/statusline/flying-dutchman-statusline.sh" "$CLAUDE_DIR/flying-dutchman-statusline.sh"
+    download_file "$REPO_RAW_BASE/statusline/flying-dutchman-statusline.sh" "$CLAUDE_DIR/flying-dutchman-statusline.sh" || true
     if [ "$DRY_RUN" = false ]; then
         chmod +x "$CLAUDE_DIR/flying-dutchman-statusline.sh"
     fi

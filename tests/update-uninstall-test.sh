@@ -189,4 +189,60 @@ if [ ! -f "$DETACHED_TARGET/agents/$AGENT_NAME" ]; then
     exit 1
 fi
 
+# A failed download must not end the run. Every download_file call returns
+# non-zero on failure, and under `set -e` a bare call aborted update.sh on the
+# first 404 or network blip: later agents, all skills, all hooks and the
+# statusline were skipped, no summary printed, and without -v the run died
+# silently on exit 1. Stub curl so every request fails offline and assert the
+# updater walks the whole set and reports the failures instead.
+OFFLINE_BIN="$TEST_DIR/offline-bin"
+mkdir -p "$OFFLINE_BIN"
+cat > "$OFFLINE_BIN/curl" <<'STUB'
+#!/bin/bash
+# 22 is curl's exit code for an HTTP error under --fail.
+exit 22
+STUB
+chmod +x "$OFFLINE_BIN/curl"
+
+OFFLINE_DIR="$TEST_DIR/offline-target"
+SKILL_NAME="deslop"
+mkdir -p "$OFFLINE_DIR/agents" "$OFFLINE_DIR/skills/$SKILL_NAME" "$OFFLINE_DIR/hooks"
+cp "$REPO_DIR/agents/$AGENT_NAME" "$OFFLINE_DIR/agents/$AGENT_NAME"
+cp "$REPO_DIR/agents/$OTHER_AGENT" "$OFFLINE_DIR/agents/$OTHER_AGENT"
+cp "$REPO_DIR/skills/$SKILL_NAME/SKILL.md" "$OFFLINE_DIR/skills/$SKILL_NAME/SKILL.md"
+cp "$REPO_DIR/hooks/$HOOK_NAME" "$OFFLINE_DIR/hooks/$HOOK_NAME"
+cp "$REPO_DIR/statusline/flying-dutchman-statusline.sh" "$OFFLINE_DIR/"
+
+offline_status=0
+offline_output=$(cd "$REPO_DIR" && PATH="$OFFLINE_BIN:$PATH" ./update.sh -v \
+    --claude-dir "$OFFLINE_DIR" 2>&1) || offline_status=$?
+
+if [ "$offline_status" -ne 0 ]; then
+    echo "update aborted on a failed download instead of continuing" >&2
+    echo "$offline_output" >&2
+    exit 1
+fi
+
+# The first agent failing must not stop the components queued behind it.
+for phase in "Updating skills..." "Updating hooks..." "Updating statusline..."; do
+    if ! grep -Fq "$phase" <<< "$offline_output"; then
+        echo "update skipped phase after a failed download: $phase" >&2
+        exit 1
+    fi
+done
+
+grep -Fq "Failed: $OFFLINE_DIR/agents/$OTHER_AGENT" <<< "$offline_output"
+grep -Fq "Update complete with errors" <<< "$offline_output"
+grep -Fq "Restart Claude Code to load updates" <<< "$offline_output"
+
+# A failed refresh leaves the installed copy exactly as it was.
+if ! cmp -s "$REPO_DIR/agents/$AGENT_NAME" "$OFFLINE_DIR/agents/$AGENT_NAME"; then
+    echo "a failed download damaged an installed agent" >&2
+    exit 1
+fi
+if ! cmp -s "$REPO_DIR/skills/$SKILL_NAME/SKILL.md" "$OFFLINE_DIR/skills/$SKILL_NAME/SKILL.md"; then
+    echo "a failed download damaged an installed skill" >&2
+    exit 1
+fi
+
 echo "update/uninstall tests passed"
