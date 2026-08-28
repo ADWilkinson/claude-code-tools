@@ -134,6 +134,39 @@ if [ -e "$CWD_DIR/hooks/$HOOK_NAME" ]; then
     exit 1
 fi
 
+# install.sh no longer copies hooks/README.md or hooks/hooks.json, but earlier
+# versions did. uninstall.sh is the only thing that can clear them, so its
+# removal list must stay wider than the set install.sh writes today.
+LEGACY_DIR="$TEST_DIR/legacy-hooks-target"
+mkdir -p "$LEGACY_DIR/hooks"
+cp "$REPO_DIR/hooks/$HOOK_NAME" "$LEGACY_DIR/hooks/$HOOK_NAME"
+cp "$REPO_DIR/hooks/README.md" "$LEGACY_DIR/hooks/README.md"
+cp "$REPO_DIR/hooks/hooks.json" "$LEGACY_DIR/hooks/hooks.json"
+
+(cd "$REPO_DIR" && ./uninstall.sh --force --claude-dir "$LEGACY_DIR" >/dev/null)
+
+for leftover in "$HOOK_NAME" README.md hooks.json; do
+    if [ -e "$LEGACY_DIR/hooks/$leftover" ]; then
+        echo "uninstall left hooks/$leftover from a pre-fix install" >&2
+        exit 1
+    fi
+done
+
+# update.sh must refresh the same hooks install.sh writes. The offline fallback
+# list is the contract; the fetched listing has to agree with it.
+UPDATE_HOOKS_DIR="$TEST_DIR/update-hooks-target"
+mkdir -p "$UPDATE_HOOKS_DIR/hooks"
+cp "$REPO_DIR/hooks/README.md" "$UPDATE_HOOKS_DIR/hooks/README.md"
+
+update_hooks_output=$(cd "$REPO_DIR" && ./update.sh --dry-run -v \
+    --claude-dir "$UPDATE_HOOKS_DIR")
+
+if grep -Fq "Would update: $UPDATE_HOOKS_DIR/hooks/README.md" <<< "$update_hooks_output"; then
+    echo "update treated hooks/README.md as a hook" >&2
+    exit 1
+fi
+grep -Fq "Hook not installed, skipping: $HOOK_NAME" <<< "$update_hooks_output"
+
 # A copy of the script with no source tree beside it cannot know what to remove.
 # It must say so rather than exit 0 on an empty list.
 DETACHED_DIR="$TEST_DIR/detached"
