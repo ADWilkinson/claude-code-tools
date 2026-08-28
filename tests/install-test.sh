@@ -134,6 +134,46 @@ if [ -e "$OUT_OF_TREE_DIR/hooks/decoy-hook.sh" ]; then
     exit 1
 fi
 
+# hooks/ carries README.md and hooks.json alongside the two hook scripts.
+# Installing every file put documentation on the hook path with the exec bit
+# set and reported 4 hooks where the plugin manifest declares 2.
+HOOKS_ONLY_DIR="$TEST_DIR/hooks-target"
+
+hooks_output=$(cd "$REPO_DIR" && HOME="$FAKE_HOME" ./install.sh \
+    --hooks-only \
+    --claude-dir "$HOOKS_ONLY_DIR")
+
+test -x "$HOOKS_ONLY_DIR/hooks/auto-format.sh"
+test -x "$HOOKS_ONLY_DIR/hooks/constraint-persistence.sh"
+if [ -e "$HOOKS_ONLY_DIR/hooks/README.md" ]; then
+    echo "install copied hooks/README.md onto the hook path" >&2
+    exit 1
+fi
+if [ -e "$HOOKS_ONLY_DIR/hooks/hooks.json" ]; then
+    echo "install copied hooks/hooks.json onto the hook path" >&2
+    exit 1
+fi
+
+installed_hooks=$(ls -1 "$HOOKS_ONLY_DIR/hooks" | wc -l | tr -d ' ')
+declared_hooks=$(ls -1 "$REPO_DIR"/hooks/*.sh | wc -l | tr -d ' ')
+if [ "$installed_hooks" != "$declared_hooks" ]; then
+    echo "installed $installed_hooks hooks, repo ships $declared_hooks" >&2
+    exit 1
+fi
+grep -Fq "Installed $declared_hooks hooks" <<< "$hooks_output"
+
+# The preview must list the same set the install writes.
+hooks_preview=$(cd "$REPO_DIR" && HOME="$FAKE_HOME" ./install.sh \
+    --dry-run \
+    --hooks-only \
+    --claude-dir "$TEST_DIR/hooks-preview")
+
+grep -Fq "Would install hook: auto-format.sh" <<< "$hooks_preview"
+if grep -Fq "Would install hook: README.md" <<< "$hooks_preview"; then
+    echo "preview advertised hooks/README.md as a hook" >&2
+    exit 1
+fi
+
 # A copy of the script with no source tree beside it has nothing to install.
 # It must say so rather than report a successful empty install.
 DETACHED_DIR="$TEST_DIR/detached"

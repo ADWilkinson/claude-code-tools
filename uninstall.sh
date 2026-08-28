@@ -134,6 +134,9 @@ if [ -d "$SCRIPT_DIR/skills" ]; then
     done
 fi
 
+# Every file under hooks/ stays on the removal list, not just the shell scripts
+# install.sh now copies. Installers before that change also dropped README.md
+# and hooks.json into $CLAUDE_DIR/hooks/, and only this script can clean them up.
 if [ -d "$SCRIPT_DIR/hooks" ]; then
     for hook_file in "$SCRIPT_DIR"/hooks/*; do
         [ -f "$hook_file" ] && HOOKS+=("$(basename "$hook_file")")

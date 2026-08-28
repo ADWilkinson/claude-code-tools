@@ -254,7 +254,7 @@ backup_existing() {
     fi
 
     if [ "$INSTALL_HOOKS" = true ] && [ -d "$SCRIPT_DIR/hooks" ]; then
-        for hook_file in "$SCRIPT_DIR"/hooks/*; do
+        for hook_file in "$SCRIPT_DIR"/hooks/*.sh; do
             if [ -f "$hook_file" ]; then
                 hook_name=$(basename "$hook_file")
                 echo "Hook: $hook_name" >> "$BACKUP_DIR/metadata/manifest.txt"
@@ -368,8 +368,12 @@ install_hooks() {
         return
     fi
 
+    # hooks/ also carries README.md and hooks.json, which document and template
+    # the settings.json wiring. Only the shell scripts are hooks; copying the
+    # rest into $CLAUDE_DIR/hooks/ marked executable put docs on the hook path
+    # and reported 4 installed hooks where the plugin manifest declares 2.
     local count=0
-    for hook_file in "$SCRIPT_DIR"/hooks/*; do
+    for hook_file in "$SCRIPT_DIR"/hooks/*.sh; do
         if [ -f "$hook_file" ]; then
             hook_name=$(basename "$hook_file")
             if [ "$DRY_RUN" = true ]; then
@@ -476,7 +480,7 @@ show_preview() {
 
     if [ "$INSTALL_HOOKS" = true ] && [ -d "$SCRIPT_DIR/hooks" ]; then
         echo "  Hooks:"
-        for hook_file in "$SCRIPT_DIR"/hooks/*; do
+        for hook_file in "$SCRIPT_DIR"/hooks/*.sh; do
             if [ -f "$hook_file" ]; then
                 echo "    $(basename "$hook_file")"
             fi
@@ -508,7 +512,7 @@ show_summary() {
     fi
 
     if [ "$INSTALL_HOOKS" = true ]; then
-        local hook_count=$(ls -1 "$CLAUDE_DIR/hooks"/* 2>/dev/null | wc -l | tr -d ' ')
+        local hook_count=$(ls -1 "$CLAUDE_DIR/hooks"/*.sh 2>/dev/null | wc -l | tr -d ' ')
         echo "  $hook_count hooks in $CLAUDE_DIR/hooks/"
     fi
 

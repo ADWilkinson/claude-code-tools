@@ -224,6 +224,14 @@ else
     SKILLS=("${DEFAULT_SKILLS[@]}")
 fi
 
+# hooks/ also holds README.md and hooks.json, which are documentation and a
+# settings.json template rather than hooks. Filtering the listing to shell
+# scripts keeps the fetched list identical to DEFAULT_HOOKS, so an update
+# behaves the same whether or not the contents API is reachable.
+if [ -n "$HOOKS_RAW" ]; then
+    HOOKS_RAW=$(grep '\.sh$' <<< "$HOOKS_RAW" || true)
+fi
+
 if [ -n "$HOOKS_RAW" ]; then
     IFS=$'\n' HOOKS=($HOOKS_RAW)
 else
