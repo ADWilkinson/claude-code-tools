@@ -4,6 +4,8 @@ Hooks execute shell commands at specific points in Claude Code's lifecycle. They
 
 If you install via `./install.sh`, the hook scripts are copied into `~/.claude/hooks/` but still need to be enabled in `settings.json`.
 
+If you install the plugin, `hooks.json` in this directory wires both hooks up automatically. Claude Code runs hooks from your project directory, so the commands there address the scripts through `${CLAUDE_PLUGIN_ROOT}`, which it substitutes for the plugin directory. That variable is only available in a plugin's `hooks/hooks.json`, not in `settings.json`.
+
 ## Available Hooks
 
 ### auto-format.sh
