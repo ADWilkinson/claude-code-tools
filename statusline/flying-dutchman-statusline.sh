@@ -8,8 +8,22 @@
 
 input=$(cat)
 
+# Every field below comes from one jq pass over Claude Code's JSON payload, and
+# jq ships with neither macOS nor the mainstream Linux distributions. When it is
+# missing the eval assigned nothing and the line still rendered: no project
+# name, a bare "+ -" diff and no model. Say what is wrong instead, in the one
+# channel a statusline has.
+statusline_notice() {
+    printf '\033[90m%s\033[0m\n' "$1"
+    exit 0
+}
+
+if ! command -v jq >/dev/null 2>&1; then
+    statusline_notice "statusline: jq not found (brew install jq / apt install jq)"
+fi
+
 # --- Single jq call for all JSON extraction ---
-eval "$(echo "$input" | jq -r '
+fields=$(echo "$input" | jq -r '
   @sh "model_name=\(.model.display_name // "Claude")",
   @sh "current_dir=\(.workspace.current_dir // "~")",
   @sh "project_dir=\(.workspace.project_dir // "")",
@@ -26,7 +40,15 @@ eval "$(echo "$input" | jq -r '
   @sh "agent_name=\(.agent.name // "")",
   @sh "current_activity=\(.current_activity // "")",
   @sh "active_tools=\((.active_tools // []) | join(","))"
-' 2>/dev/null)"
+' 2>/dev/null)
+
+# A jq that cannot parse the payload leaves $fields empty, which renders the
+# same hollow line as a jq that is not installed.
+if [ -z "$fields" ]; then
+    statusline_notice "statusline: could not read the status payload"
+fi
+
+eval "$fields"
 
 # --- Format helpers (pure bash, no subprocesses) ---
 

@@ -116,6 +116,8 @@ Custom statusline showing:
 - Cumulative cost tracking
 - Code diff stats (+/- lines)
 
+The statusline reads Claude Code's JSON payload with [`jq`](https://jqlang.github.io/jq/). Without it the line says so instead of rendering empty fields, so install `jq` (`brew install jq`, `apt install jq`) to use it.
+
 ### Hooks (2)
 
 Shell scripts that run at specific points in Claude Code's lifecycle:
