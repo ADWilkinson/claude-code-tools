@@ -6,6 +6,10 @@ If you install via `./install.sh`, the hook scripts are copied into `~/.claude/h
 
 If you install the plugin, `hooks.json` in this directory wires both hooks up automatically. Claude Code runs hooks from your project directory, so the commands there address the scripts through `${CLAUDE_PLUGIN_ROOT}`, which it substitutes for the plugin directory. That variable is only available in a plugin's `hooks/hooks.json`, not in `settings.json`.
 
+## Requirements
+
+Both hooks parse Claude Code's JSON payload with [`jq`](https://jqlang.github.io/jq/), which ships with neither macOS nor most Linux distributions. Install it with `brew install jq` or `apt install jq`. Without `jq` the hooks exit successfully and do nothing rather than reporting an error on every tool call.
+
 ## Available Hooks
 
 ### auto-format.sh

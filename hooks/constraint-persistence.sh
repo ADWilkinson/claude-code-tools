@@ -3,6 +3,15 @@
 # Reads JSON from stdin, outputs reminder context to stdout
 
 input=$(cat)
+
+# Without jq the prompt cannot be read, so there is nothing to match on. Say so
+# by exiting rather than leaning on `jq -r` failing into an empty $prompt: this
+# hook writes to stdout, and stdout is injected into the user's prompt, so a
+# missing dependency must stay silent instead of nagging on every turn.
+if ! command -v jq >/dev/null 2>&1; then
+    exit 0
+fi
+
 prompt=$(echo "$input" | jq -r '.prompt // ""' 2>/dev/null)
 
 # Constraint persistence detection - prompt Claude to save rules
