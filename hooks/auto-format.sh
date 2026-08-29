@@ -16,6 +16,15 @@ set -euo pipefail
 
 INPUT_JSON=$(cat)
 
+# Formatting is best effort: every formatter below is allowed to fail without
+# failing the hook. jq is held to the same bar. jq ships with neither macOS nor
+# the mainstream Linux distributions, and under `set -e` the unguarded
+# `jq -r` exited 127, so Claude Code reported "jq: command not found" on every
+# single Edit, Write and MultiEdit for anyone who did not already have it.
+if ! command -v jq >/dev/null 2>&1; then
+    exit 0
+fi
+
 tool_name=$(echo "$INPUT_JSON" | jq -r '.tool_name // ""')
 
 # Only process Edit and Write tools

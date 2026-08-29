@@ -125,6 +125,8 @@ Shell scripts that run at specific points in Claude Code's lifecycle:
 
 Install copies hooks to `~/.claude/hooks`, but you still need to add them to `settings.json`. See [hooks/README.md](hooks/README.md) for setup instructions.
 
+Both hooks read Claude Code's JSON payload with [`jq`](https://jqlang.github.io/jq/). Without it they exit quietly and do nothing, so install `jq` (`brew install jq`, `apt install jq`) to use them.
+
 ### Rules (1)
 
 Reusable rule files for `~/.claude/rules/`:

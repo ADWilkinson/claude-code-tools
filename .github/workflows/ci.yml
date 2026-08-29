@@ -34,3 +34,6 @@ jobs:
 
       - name: Plugin manifest tests
         run: bash tests/plugin-manifest-test.sh
+
+      - name: Hook tests
+        run: bash tests/hooks-test.sh
