@@ -37,3 +37,6 @@ jobs:
 
       - name: Hook tests
         run: bash tests/hooks-test.sh
+
+      - name: Statusline tests
+        run: bash tests/statusline-test.sh
