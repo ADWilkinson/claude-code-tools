@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "./hooks/auto-format.sh"
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/auto-format.sh\""
           }
         ]
       }
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "./hooks/constraint-persistence.sh"
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/constraint-persistence.sh\""
           }
         ]
       }

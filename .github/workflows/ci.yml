@@ -31,3 +31,6 @@ jobs:
 
       - name: Update and uninstall tests
         run: bash tests/update-uninstall-test.sh
+
+      - name: Plugin manifest tests
+        run: bash tests/plugin-manifest-test.sh
