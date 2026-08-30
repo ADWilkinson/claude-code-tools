@@ -89,12 +89,34 @@ else
     PM=""
 fi
 
+# A package manager only needs a manifest beside it to install @linear/sdk
+# locally, so write the manifest rather than asking one to scaffold a project.
+# `bun init -y` does far more than write a package.json: it also drops a CLAUDE.md
+# of generic Bun advice into the skill directory, which Claude Code then loads as
+# instructions, plus an index.ts, README.md, tsconfig.json and .gitignore that
+# have nothing to do with this skill.
+if [ ! -f "$SKILL_DIR/package.json" ]; then
+    cat > "$SKILL_DIR/package.json" <<'JSON'
+{
+  "name": "linear-skill",
+  "private": true,
+  "type": "module"
+}
+JSON
+fi
+
+# Point out the residue an earlier install left behind. Removing files from a
+# user's ~/.claude is not this installer's call, but a stray CLAUDE.md steers
+# every session that reads it, so it should not go unmentioned.
+for stray in CLAUDE.md index.ts README.md tsconfig.json; do
+    if [ -f "$SKILL_DIR/$stray" ]; then
+        echo -e "${YELLOW}!${NC} Leftover from a previous install, safe to delete: $SKILL_DIR/$stray"
+    fi
+done
+
 # Install dependency
 if [ -n "$PM" ]; then
     echo "Installing @linear/sdk using $PM..."
-    if [ ! -f "$SKILL_DIR/package.json" ]; then
-        (cd "$SKILL_DIR" && $PM init -y > /dev/null 2>&1) || (cd "$SKILL_DIR" && npm init -y > /dev/null 2>&1)
-    fi
     (cd "$SKILL_DIR" && $PM_INSTALL @linear/sdk > /dev/null 2>&1) || true
 else
     echo -e "${YELLOW}!${NC} No package manager found - skipping @linear/sdk install"
