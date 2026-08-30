@@ -40,3 +40,6 @@ jobs:
 
       - name: Statusline tests
         run: bash tests/statusline-test.sh
+
+      - name: Skill installer tests
+        run: bash tests/skill-installer-test.sh

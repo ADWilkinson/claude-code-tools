@@ -335,8 +335,9 @@ Follow existing naming conventions (kebab-case) and include clear descriptions f
 
 ## Testing
 
-The installer scripts are covered by two shell suites. Both are hermetic: they run
-against a temporary directory and never touch your real `~/.claude`.
+The shipped scripts are covered by shell suites. Every one of them is hermetic:
+they run against a temporary directory, stub out the network and any package
+manager, and never touch your real `~/.claude`.
 
 ```bash
 # Installer destination handling
@@ -345,12 +346,24 @@ bash tests/install-test.sh
 # Update and uninstall dry-run behaviour
 bash tests/update-uninstall-test.sh
 
+# Plugin hook manifest wiring
+bash tests/plugin-manifest-test.sh
+
+# Hook behaviour, with and without jq
+bash tests/hooks-test.sh
+
+# Statusline rendering
+bash tests/statusline-test.sh
+
+# Per-skill installers, including what they write into ~/.claude
+bash tests/skill-installer-test.sh
+
 # Syntax-check every tracked shell script
 for f in $(git ls-files '*.sh'); do bash -n "$f" || exit 1; done
 ```
 
-CI runs all three on `ubuntu-latest` and `macos-latest` for every pull request and
-every push to `main`.
+CI runs all of them on `ubuntu-latest` and `macos-latest` for every pull request
+and every push to `main`.
 
 ## Author
 
