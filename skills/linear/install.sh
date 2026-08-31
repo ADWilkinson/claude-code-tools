@@ -114,16 +114,28 @@ for stray in CLAUDE.md index.ts README.md tsconfig.json; do
     fi
 done
 
-# Install dependency
+# Install dependency. A failed `add` used to be swallowed (`|| true` plus a
+# discarded stderr), so the installer printed "Skill installed" with no SDK
+# and a later `update.sh` had nothing in package.json to repair. The CLI
+# fallback imports `@linear/sdk`, so a missing package is a broken install.
+# Still exit 0: the parent ./install.sh runs under `set -e` and would
+# otherwise roll back every agent and skill because this one dependency
+# failed.
 if [ -n "$PM" ]; then
     echo "Installing @linear/sdk using $PM..."
-    (cd "$SKILL_DIR" && $PM_INSTALL @linear/sdk > /dev/null 2>&1) || true
+    sdk_status=0
+    (cd "$SKILL_DIR" && $PM_INSTALL @linear/sdk > /dev/null 2>&1) || sdk_status=$?
+    if [ "$sdk_status" -eq 0 ] && [ -d "$SKILL_DIR/node_modules/@linear/sdk" ]; then
+        echo -e "${GREEN}✓${NC} Skill installed to $SKILL_DIR"
+    else
+        echo -e "${YELLOW}!${NC} Could not install @linear/sdk using $PM"
+        echo "Install later with: (cd \"$SKILL_DIR\" && $PM_INSTALL @linear/sdk)"
+    fi
 else
     echo -e "${YELLOW}!${NC} No package manager found - skipping @linear/sdk install"
     echo "Install later with: (cd \"$SKILL_DIR\" && npm install @linear/sdk)"
+    echo -e "${GREEN}✓${NC} Skill installed to $SKILL_DIR"
 fi
-
-echo -e "${GREEN}✓${NC} Skill installed to $SKILL_DIR"
 
 # Check for API key
 if [ -z "$LINEAR_API_KEY" ]; then

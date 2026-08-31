@@ -97,4 +97,43 @@ test -f "$BARE_DIR/skills/linear/SKILL.md"
 test -f "$BARE_DIR/skills/linear/package.json"
 grep -Fq "No package manager found" <<< "$bare_output"
 
+# A package manager that fails to add the SDK used to be treated as success:
+# stderr was discarded, `|| true` kept the installer at exit 0, and the
+# summary still said "Skill installed". The CLI fallback imports
+# `@linear/sdk`, so that report was false. The parent ./install.sh runs
+# under `set -e`, so this installer must still exit 0 — otherwise a
+# network blip rolls back every other skill and agent.
+FAIL_BIN="$TEST_DIR/fail-bin"
+mkdir -p "$FAIL_BIN"
+for util in mkdir cp chmod cat dirname; do
+    ln -s "$(command -v "$util")" "$FAIL_BIN/$util"
+done
+cat > "$FAIL_BIN/bun" <<'STUB'
+#!/bin/bash
+if [ "${1:-}" = "add" ]; then
+    exit 1
+fi
+exit 0
+STUB
+chmod +x "$FAIL_BIN/bun"
+
+FAIL_DIR="$TEST_DIR/fail-sdk"
+fail_status=0
+fail_output=$(PATH="$FAIL_BIN" "$INSTALLER" --claude-dir "$FAIL_DIR") || fail_status=$?
+
+if [ "$fail_status" -ne 0 ]; then
+    echo "installer exited $fail_status when @linear/sdk failed to install" >&2
+    exit 1
+fi
+test -f "$FAIL_DIR/skills/linear/SKILL.md"
+if [ -d "$FAIL_DIR/skills/linear/node_modules/@linear/sdk" ]; then
+    echo "failing bun add still produced @linear/sdk" >&2
+    exit 1
+fi
+grep -Fq "Could not install @linear/sdk using bun" <<< "$fail_output"
+if grep -Fq "Skill installed to" <<< "$fail_output"; then
+    echo "installer reported success without @linear/sdk" >&2
+    exit 1
+fi
+
 echo "skill installer tests passed"
