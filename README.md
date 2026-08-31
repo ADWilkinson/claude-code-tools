@@ -204,6 +204,11 @@ Remove all installed tools:
 ./uninstall.sh --claude-dir /path/to/.claude
 ```
 
+Uninstall also clears the `statusLine` and `hooks` entries from `settings.json`
+when they still address the scripts it removes, so Claude Code is not left
+invoking files that are no longer on disk. Entries you pointed at your own
+scripts are left alone.
+
 ## Manual Installation
 
 ### Agents

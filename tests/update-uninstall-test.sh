@@ -114,6 +114,98 @@ if command -v jq >/dev/null 2>&1; then
     fi
 fi
 
+# Uninstall must clear the hook entries it deletes the scripts for, exactly as it
+# does for statusLine. Claude Code runs every configured hook command, so a
+# settings.json left addressing a removed hooks/auto-format.sh reports a missing
+# file on every Edit, Write and MultiEdit, and the UserPromptSubmit entry does
+# the same on every turn.
+if command -v jq >/dev/null 2>&1; then
+    HOOK_SETTINGS_DIR="$TEST_DIR/hook-settings"
+    mkdir -p "$HOOK_SETTINGS_DIR/hooks"
+    cp "$REPO_DIR/hooks/auto-format.sh" "$HOOK_SETTINGS_DIR/hooks/auto-format.sh"
+    cp "$REPO_DIR/hooks/constraint-persistence.sh" \
+        "$HOOK_SETTINGS_DIR/hooks/constraint-persistence.sh"
+    jq -n --arg dir "$HOOK_SETTINGS_DIR" '{
+        model: "opus",
+        hooks: {
+            PostToolUse: [{
+                matcher: "Edit|Write|MultiEdit",
+                hooks: [
+                    {type: "command", command: ($dir + "/hooks/auto-format.sh")},
+                    {type: "command", command: ($dir + "/hooks/my-own.sh")}
+                ]
+            }],
+            UserPromptSubmit: [{
+                hooks: [{type: "command",
+                         command: "~/.claude/hooks/constraint-persistence.sh"}]
+            }],
+            SessionStart: [{
+                hooks: [{type: "command", command: "~/bin/auto-format.sh"}]
+            }]
+        }
+    }' > "$HOOK_SETTINGS_DIR/settings.json"
+
+    hook_settings_dry=$(cd "$REPO_DIR" && ./uninstall.sh --dry-run --force \
+        --claude-dir "$HOOK_SETTINGS_DIR")
+
+    grep -Fq "Would remove: hook entries from settings.json" <<< "$hook_settings_dry"
+    if ! jq -e '.hooks.PostToolUse[0].hooks | length == 2' \
+         "$HOOK_SETTINGS_DIR/settings.json" >/dev/null; then
+        echo "uninstall dry-run edited the hooks in settings.json" >&2
+        exit 1
+    fi
+
+    (cd "$REPO_DIR" && ./uninstall.sh --force --claude-dir "$HOOK_SETTINGS_DIR" >/dev/null)
+
+    if jq -e '[.. | objects | .command? // empty]
+              | any(test("hooks/(auto-format|constraint-persistence)\\.sh"))' \
+         "$HOOK_SETTINGS_DIR/settings.json" >/dev/null; then
+        echo "uninstall left a hook pointing at a deleted script" >&2
+        exit 1
+    fi
+    # A hook the user added beside ours, and one merely sharing a filename
+    # outside hooks/, are not ours to remove.
+    if ! jq -e --arg dir "$HOOK_SETTINGS_DIR" '.hooks.PostToolUse[0].hooks
+                == [{type: "command", command: ($dir + "/hooks/my-own.sh")}]' \
+         "$HOOK_SETTINGS_DIR/settings.json" >/dev/null; then
+        echo "uninstall removed a hook it did not install" >&2
+        exit 1
+    fi
+    if ! jq -e '.hooks.SessionStart[0].hooks[0].command == "~/bin/auto-format.sh"' \
+         "$HOOK_SETTINGS_DIR/settings.json" >/dev/null; then
+        echo "uninstall removed a hook outside hooks/ that shares a filename" >&2
+        exit 1
+    fi
+    # An event left with no hook groups is dropped rather than kept empty.
+    if jq -e 'has("hooks") and (.hooks | has("UserPromptSubmit"))' \
+         "$HOOK_SETTINGS_DIR/settings.json" >/dev/null; then
+        echo "uninstall left an empty UserPromptSubmit event behind" >&2
+        exit 1
+    fi
+    if ! jq -e '.model == "opus"' "$HOOK_SETTINGS_DIR/settings.json" >/dev/null; then
+        echo "uninstall clobbered unrelated settings.json keys" >&2
+        exit 1
+    fi
+
+    # With nothing but our hooks configured, the whole "hooks" key goes away.
+    ONLY_HOOKS_DIR="$TEST_DIR/hook-settings-only"
+    mkdir -p "$ONLY_HOOKS_DIR/hooks"
+    cp "$REPO_DIR/hooks/auto-format.sh" "$ONLY_HOOKS_DIR/hooks/auto-format.sh"
+    jq -n --arg dir "$ONLY_HOOKS_DIR" '{
+        hooks: {PostToolUse: [{
+            matcher: "Edit",
+            hooks: [{type: "command", command: ($dir + "/hooks/auto-format.sh")}]
+        }]}
+    }' > "$ONLY_HOOKS_DIR/settings.json"
+
+    (cd "$REPO_DIR" && ./uninstall.sh --force --claude-dir "$ONLY_HOOKS_DIR" >/dev/null)
+
+    if jq -e 'has("hooks")' "$ONLY_HOOKS_DIR/settings.json" >/dev/null; then
+        echo "uninstall left an empty hooks object behind" >&2
+        exit 1
+    fi
+fi
+
 # uninstall.sh must remove what it installed no matter where it is called from.
 # Building the removal list from $PWD made an out-of-tree invocation print
 # "Uninstall complete" while leaving every agent and hook on disk.
