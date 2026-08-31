@@ -72,6 +72,8 @@ Then add to your `~/.claude/settings.json`:
 }
 ```
 
+`./uninstall.sh` removes these entries again when they still address the scripts it deletes, so `settings.json` is not left invoking files that are gone. Hooks you pointed at your own scripts are untouched.
+
 ## Hook Types
 
 Claude Code supports these hook events:
