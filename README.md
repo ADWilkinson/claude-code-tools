@@ -205,9 +205,11 @@ Remove all installed tools:
 ```
 
 Uninstall also clears the `statusLine` and `hooks` entries from `settings.json`
-when they still address the scripts it removes, so Claude Code is not left
-invoking files that are no longer on disk. Entries you pointed at your own
-scripts are left alone.
+whenever they address the scripts this repo installs, so Claude Code is not left
+invoking files that are no longer on disk. That cleanup does not depend on the
+scripts still being present, so it also repairs a `settings.json` left wired up
+by an older install whose files are already gone. Entries you pointed at your
+own scripts are left alone.
 
 ## Manual Installation
 
