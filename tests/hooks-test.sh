@@ -97,6 +97,61 @@ if command -v jq >/dev/null 2>&1; then
     constraint_out=$(printf '%s' '{"prompt":"what does this function do"}' | bash "$CONSTRAINT")
     [ -z "$constraint_out" ] \
         || fail "constraint-persistence.sh flagged an ordinary prompt: $constraint_out"
+
+    # auto-format.sh walks up from the edited file looking for a project root.
+    # A relative file_path is reachable -- the hook's own -f test resolves it
+    # against the working directory Claude Code runs the hook in -- and dirname
+    # reduces such a path to "." and then stays there, so the "$dir" != "/"
+    # guard never fired and the walk never terminated. A PostToolUse hook that
+    # never returns hangs every Edit, Write and MultiEdit, so the cases below
+    # run under `timeout` and treat a kill as the failure.
+    #
+    # The fixture deliberately carries no package.json, Cargo.toml, pyproject.toml
+    # or go.mod: a marker beside the edited file ends the walk on its first
+    # iteration and hides the bug.
+    ROOTLESS_DIR="$TEST_DIR/rootless"
+    mkdir -p "$ROOTLESS_DIR/nested"
+    echo 'const b = 1' > "$ROOTLESS_DIR/b.ts"
+    echo 'const c = 1' > "$ROOTLESS_DIR/nested/c.ts"
+
+    run_relative() {
+        local workdir="$1"
+        local rel="$2"
+        local status=0
+
+        # `timeout` exits 124 when it has to kill the hook.
+        printf '%s' "{\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"$rel\"}}" \
+            | (cd "$workdir" && timeout 10 bash "$AUTO_FORMAT") >/dev/null 2>&1 || status=$?
+
+        [ "$status" -ne 124 ] || fail "auto-format.sh hung on the relative path $rel"
+        [ "$status" -eq 0 ] || fail "auto-format.sh exited $status on the relative path $rel"
+    }
+
+    # A project whose root is only reachable by resolving the relative path
+    # first. The stub records the call, so this also proves the walk still finds
+    # the root it is supposed to find rather than merely terminating.
+    PROJECT_DIR="$TEST_DIR/project"
+    mkdir -p "$PROJECT_DIR/src" "$PROJECT_DIR/node_modules/.bin"
+    echo '{}' > "$PROJECT_DIR/package.json"
+    echo 'const a = 1' > "$PROJECT_DIR/src/a.ts"
+    export FORMATTER_LOG="$TEST_DIR/formatter.log"
+    cat > "$PROJECT_DIR/node_modules/.bin/prettier" <<'STUB'
+#!/bin/bash
+printf '%s\n' "$*" >> "$FORMATTER_LOG"
+STUB
+    chmod +x "$PROJECT_DIR/node_modules/.bin/prettier"
+
+    if command -v timeout >/dev/null 2>&1; then
+        run_relative "$ROOTLESS_DIR" "b.ts"
+        run_relative "$ROOTLESS_DIR" "nested/c.ts"
+        run_relative "$ROOTLESS_DIR" "./nested/c.ts"
+
+        run_relative "$PROJECT_DIR" "src/a.ts"
+        grep -Fq -- "--write src/a.ts" "$FORMATTER_LOG" 2>/dev/null \
+            || fail "auto-format.sh did not reach the project-local prettier for a relative path"
+    else
+        echo "timeout not installed, skipping the relative-path hook checks" >&2
+    fi
 else
     echo "jq not installed, skipping the with-jq hook checks" >&2
 fi

@@ -43,14 +43,30 @@ fi
 ext="${file_path##*.}"
 
 # Find project root (look for package.json, Cargo.toml, pyproject.toml, etc.)
+#
+# The walk starts from an absolute directory. A relative file_path is allowed
+# through by the -f test above, because it resolves against the hook's working
+# directory, and dirname reduces it to "." and then stays there forever: the
+# "$dir" != "/" guard never fired, so an Edit or Write reported with a relative
+# path spun this loop forking dirname until Claude Code was killed.
 dir=$(dirname "$file_path")
+case "$dir" in
+    /*) ;;
+    *) dir="$PWD/$dir" ;;
+esac
+
 project_root=""
-while [[ "$dir" != "/" ]]; do
+while :; do
     if [[ -f "$dir/package.json" || -f "$dir/Cargo.toml" || -f "$dir/pyproject.toml" || -f "$dir/go.mod" ]]; then
         project_root="$dir"
         break
     fi
-    dir=$(dirname "$dir")
+    # Stop as soon as dirname stops making progress rather than testing for "/".
+    # "/" is its fixed point on every system, but POSIX lets "//" be its own too,
+    # and that is the same non-terminating loop under a different path.
+    parent=$(dirname "$dir")
+    [[ "$parent" == "$dir" ]] && break
+    dir="$parent"
 done
 
 # Format based on file type
