@@ -72,7 +72,7 @@ Then add to your `~/.claude/settings.json`:
 }
 ```
 
-`./uninstall.sh` removes these entries again when they still address the scripts it deletes, so `settings.json` is not left invoking files that are gone. Hooks you pointed at your own scripts are untouched.
+`./uninstall.sh` removes these entries again whenever they address the scripts in this directory, so `settings.json` is not left invoking files that are gone. It does so even if the hook scripts have already been deleted, which is how a `settings.json` wired up by an older install gets repaired. Hooks you pointed at your own scripts are untouched.
 
 ## Hook Types
 
