@@ -114,16 +114,36 @@ if command -v jq >/dev/null 2>&1; then
     echo 'const b = 1' > "$ROOTLESS_DIR/b.ts"
     echo 'const c = 1' > "$ROOTLESS_DIR/nested/c.ts"
 
+    # Deliberately not `timeout`: it is GNU coreutils, so it is absent from a
+    # stock macOS -- the platform most Claude Code users are on. Guarding these
+    # cases behind `command -v timeout` made them skip silently there, which
+    # reads as coverage without being any. Poll the backgrounded hook instead,
+    # using only builtins and `sleep`.
     run_relative() {
         local workdir="$1"
         local rel="$2"
         local status=0
+        local waited=0
 
-        # `timeout` exits 124 when it has to kill the hook.
         printf '%s' "{\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"$rel\"}}" \
-            | (cd "$workdir" && timeout 10 bash "$AUTO_FORMAT") >/dev/null 2>&1 || status=$?
+            | (cd "$workdir" && exec bash "$AUTO_FORMAT") >/dev/null 2>&1 &
+        local pid=$!
 
-        [ "$status" -ne 124 ] || fail "auto-format.sh hung on the relative path $rel"
+        # 10s at 0.1s per tick. `exec` above matters: without it $! is the
+        # subshell and a kill leaves the hook itself spinning as an orphan,
+        # forking dirname in a tight loop for the rest of the run.
+        while [ "$waited" -lt 100 ] && kill -0 "$pid" 2>/dev/null; do
+            sleep 0.1
+            waited=$((waited + 1))
+        done
+
+        if kill -0 "$pid" 2>/dev/null; then
+            kill -9 "$pid" 2>/dev/null || true
+            wait "$pid" 2>/dev/null || true
+            fail "auto-format.sh hung on the relative path $rel"
+        fi
+
+        wait "$pid" || status=$?
         [ "$status" -eq 0 ] || fail "auto-format.sh exited $status on the relative path $rel"
     }
 
@@ -141,17 +161,13 @@ printf '%s\n' "$*" >> "$FORMATTER_LOG"
 STUB
     chmod +x "$PROJECT_DIR/node_modules/.bin/prettier"
 
-    if command -v timeout >/dev/null 2>&1; then
-        run_relative "$ROOTLESS_DIR" "b.ts"
-        run_relative "$ROOTLESS_DIR" "nested/c.ts"
-        run_relative "$ROOTLESS_DIR" "./nested/c.ts"
+    run_relative "$ROOTLESS_DIR" "b.ts"
+    run_relative "$ROOTLESS_DIR" "nested/c.ts"
+    run_relative "$ROOTLESS_DIR" "./nested/c.ts"
 
-        run_relative "$PROJECT_DIR" "src/a.ts"
-        grep -Fq -- "--write src/a.ts" "$FORMATTER_LOG" 2>/dev/null \
-            || fail "auto-format.sh did not reach the project-local prettier for a relative path"
-    else
-        echo "timeout not installed, skipping the relative-path hook checks" >&2
-    fi
+    run_relative "$PROJECT_DIR" "src/a.ts"
+    grep -Fq -- "--write src/a.ts" "$FORMATTER_LOG" 2>/dev/null \
+        || fail "auto-format.sh did not reach the project-local prettier for a relative path"
 else
     echo "jq not installed, skipping the with-jq hook checks" >&2
 fi
