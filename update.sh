@@ -101,6 +101,12 @@ fetch_repo_list() {
 # the first 404 or network blip, so every later agent, skill, hook and the
 # statusline were skipped, the summary never printed, and without -v the run
 # ended silently on exit 1.
+#
+# The download lands in a temporary file and is moved into place only once curl
+# reports success. Writing straight to $dest let a connection dropped mid-body
+# (curl exit 18) leave the installed agent, skill, hook or statusline holding a
+# truncated copy of itself; the run still reported "complete with errors" while
+# the hooks and statusline were chmod +x'd and executed on every tool call.
 download_file() {
     local url="$1"
     local dest="$2"
@@ -112,12 +118,27 @@ download_file() {
     fi
 
     mkdir -p "$(dirname "$dest")"
-    if curl -sf "$url" -o "$dest" 2>/dev/null; then
+
+    local tmp
+    if ! tmp=$(mktemp "$dest.download.XXXXXX" 2>/dev/null); then
+        print_verbose "Failed: $dest"
+        failed=$((failed + 1))
+        return 1
+    fi
+
+    # Seed the temporary file from the copy already installed so the replacement
+    # keeps its mode; mktemp alone would hand every updated file 0600.
+    if [ -f "$dest" ]; then
+        cp -p "$dest" "$tmp" 2>/dev/null || true
+    fi
+
+    if curl -sf "$url" -o "$tmp" 2>/dev/null && mv "$tmp" "$dest"; then
         print_verbose "Updated: $dest"
         updated=$((updated + 1))
         return 0
     fi
 
+    rm -f "$tmp"
     print_verbose "Failed: $dest"
     failed=$((failed + 1))
     return 1
