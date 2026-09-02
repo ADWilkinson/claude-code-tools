@@ -58,6 +58,112 @@ if [ ! -f "$PARTIAL_DIR/agents/$AGENT_NAME" ]; then
     exit 1
 fi
 
+# A download that dies part-way through the body must not damage the copy already
+# installed. curl writing straight to the destination truncated it in place, so a
+# dropped connection replaced a working agent, hook or statusline with a fragment
+# of itself and the updater still went on to chmod +x the remains.
+STUB_BIN="$TEST_DIR/stub-bin"
+mkdir -p "$STUB_BIN"
+
+# Reproduces curl's partial-transfer behaviour: the bytes that arrived are
+# written to the -o target, then curl exits 18. Requests without -o are the
+# contents-API listings; failing them keeps the run offline and pins the update
+# to the DEFAULT_AGENTS/DEFAULT_HOOKS lists.
+cat > "$STUB_BIN/curl" <<'STUB'
+#!/bin/bash
+dest=""
+while [ $# -gt 0 ]; do
+    if [ "$1" = "-o" ]; then
+        dest="$2"
+        shift 2
+        continue
+    fi
+    shift
+done
+if [ -z "$dest" ]; then
+    exit 22
+fi
+printf 'TRUNCA' > "$dest"
+exit 18
+STUB
+chmod +x "$STUB_BIN/curl"
+
+INTERRUPTED_DIR="$TEST_DIR/interrupted-target"
+STATUSLINE_NAME="flying-dutchman-statusline.sh"
+mkdir -p "$INTERRUPTED_DIR/agents" "$INTERRUPTED_DIR/hooks"
+cp "$REPO_DIR/agents/$AGENT_NAME" "$INTERRUPTED_DIR/agents/$AGENT_NAME"
+cp "$REPO_DIR/hooks/auto-format.sh" "$INTERRUPTED_DIR/hooks/auto-format.sh"
+cp "$REPO_DIR/statusline/$STATUSLINE_NAME" "$INTERRUPTED_DIR/$STATUSLINE_NAME"
+chmod +x "$INTERRUPTED_DIR/hooks/auto-format.sh" "$INTERRUPTED_DIR/$STATUSLINE_NAME"
+
+interrupted_output=$(cd "$REPO_DIR" && PATH="$STUB_BIN:$PATH" bash ./update.sh -v \
+    --claude-dir "$INTERRUPTED_DIR")
+
+grep -Fq "Update complete with errors" <<< "$interrupted_output"
+
+for pair in \
+    "agents/$AGENT_NAME:$REPO_DIR/agents/$AGENT_NAME" \
+    "hooks/auto-format.sh:$REPO_DIR/hooks/auto-format.sh" \
+    "$STATUSLINE_NAME:$REPO_DIR/statusline/$STATUSLINE_NAME"; do
+    installed="$INTERRUPTED_DIR/${pair%%:*}"
+    source_file="${pair#*:}"
+    if ! cmp -s "$source_file" "$installed"; then
+        echo "an interrupted download corrupted $installed" >&2
+        exit 1
+    fi
+done
+
+# The scratch file the download went to is not the user's to clean up.
+leftover_downloads=$(find "$INTERRUPTED_DIR" -name '*.download.*')
+if [ -n "$leftover_downloads" ]; then
+    echo "a failed download left a temporary file behind" >&2
+    exit 1
+fi
+
+# The same path still has to replace the file when the download succeeds, and
+# leave the mode it found rather than mktemp's 0600.
+cat > "$STUB_BIN/curl" <<'STUB'
+#!/bin/bash
+dest=""
+while [ $# -gt 0 ]; do
+    if [ "$1" = "-o" ]; then
+        dest="$2"
+        shift 2
+        continue
+    fi
+    shift
+done
+if [ -z "$dest" ]; then
+    exit 22
+fi
+printf 'FRESH CONTENT\n' > "$dest"
+exit 0
+STUB
+chmod +x "$STUB_BIN/curl"
+
+FRESH_DIR="$TEST_DIR/fresh-target"
+mkdir -p "$FRESH_DIR/agents"
+cp "$REPO_DIR/agents/$AGENT_NAME" "$FRESH_DIR/agents/$AGENT_NAME"
+chmod 644 "$FRESH_DIR/agents/$AGENT_NAME"
+
+fresh_output=$(cd "$REPO_DIR" && PATH="$STUB_BIN:$PATH" bash ./update.sh -v \
+    --claude-dir "$FRESH_DIR")
+
+grep -Fq "Update complete" <<< "$fresh_output"
+if grep -Fq "with errors" <<< "$fresh_output"; then
+    echo "a successful update reported errors" >&2
+    exit 1
+fi
+if ! grep -Fqx "FRESH CONTENT" "$FRESH_DIR/agents/$AGENT_NAME"; then
+    echo "a successful download was not moved into place" >&2
+    exit 1
+fi
+fresh_mode=$(ls -ld "$FRESH_DIR/agents/$AGENT_NAME" | cut -c1-10)
+if [ "$fresh_mode" != "-rw-r--r--" ]; then
+    echo "the updated agent lost its mode: $fresh_mode" >&2
+    exit 1
+fi
+
 uninstall_output=$(cd "$REPO_DIR" && ./uninstall.sh --dry-run --claude-dir "$UNINSTALL_DIR")
 
 grep -Fq "DRY RUN - No files will be deleted" <<< "$uninstall_output"
