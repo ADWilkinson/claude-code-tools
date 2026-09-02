@@ -129,11 +129,13 @@ Install copies hooks to `~/.claude/hooks`, but you still need to add them to `se
 
 Both hooks read Claude Code's JSON payload with [`jq`](https://jqlang.github.io/jq/). Without it they exit quietly and do nothing, so install `jq` (`brew install jq`, `apt install jq`) to use them.
 
-### Rules (1)
+### Rules (3)
 
 Reusable rule files for `~/.claude/rules/`:
 
 - `code-quality.md` - Standards for reading before writing, keeping it simple, measurement over estimation.
+- `comments.md` - Comment policy: no comments that restate the code, no commented-out code, prefer naming over explanation. Carries `alwaysApply: true` frontmatter and is scoped to TypeScript, JavaScript and Python files.
+- `ui-constraints.md` - Opinionated UI constraints covering animation, component primitives, z-index and spacing. Load it for design-sensitive frontend work rather than globally; it is deliberately strict.
 
 ## Installation Options
 
@@ -256,7 +258,11 @@ chmod +x ~/.claude/hooks/*.sh
 ```bash
 mkdir -p ~/.claude/rules
 cp rules/*.md ~/.claude/rules/
-# Reference in ~/.claude/CLAUDE.md: @~/.claude/rules/code-quality.md
+# Reference the ones you want in ~/.claude/CLAUDE.md, one @ line each:
+#   @~/.claude/rules/code-quality.md
+#   @~/.claude/rules/comments.md
+# Copying a rule file does not apply it. Reference ui-constraints.md from the
+# project that needs it rather than globally - it is strict by design.
 ```
 
 ## Agent Structure
@@ -364,6 +370,9 @@ bash tests/statusline-test.sh
 
 # Per-skill installers, including what they write into ~/.claude
 bash tests/skill-installer-test.sh
+
+# README counts and component names against what the repo ships
+bash tests/readme-inventory-test.sh
 
 # Syntax-check every tracked shell script
 for f in $(git ls-files '*.sh'); do bash -n "$f" || exit 1; done
