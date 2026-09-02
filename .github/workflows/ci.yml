@@ -43,3 +43,6 @@ jobs:
 
       - name: Skill installer tests
         run: bash tests/skill-installer-test.sh
+
+      - name: README inventory tests
+        run: bash tests/readme-inventory-test.sh
