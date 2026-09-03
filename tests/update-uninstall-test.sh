@@ -598,4 +598,57 @@ if ! cmp -s "$REPO_DIR/skills/$SKILL_NAME/SKILL.md" "$OFFLINE_DIR/skills/$SKILL_
     exit 1
 fi
 
+# A listing the contents API refuses while raw.githubusercontent.com still
+# serves is the ordinary failure, not the rare one: the contents API is rate
+# limited to 60 requests an hour unauthenticated and one update.sh run spends
+# more than a dozen of them. The fallback narrowed a skill to SKILL.md, so
+# skills/linear kept a stale scripts/linear.ts -- the file the skill actually
+# executes -- and the run still printed a clean "Update complete".
+LISTING_BIN="$TEST_DIR/listing-bin"
+mkdir -p "$LISTING_BIN"
+cat > "$LISTING_BIN/curl" <<'STUB'
+#!/bin/bash
+dest=""
+while [ $# -gt 0 ]; do
+    if [ "$1" = "-o" ]; then
+        dest="$2"
+        shift 2
+        continue
+    fi
+    shift
+done
+# A request without -o is a contents-API listing. 22 is curl's exit code for an
+# HTTP error under --fail, which is what a rate-limited 403 gives it.
+if [ -z "$dest" ]; then
+    exit 22
+fi
+printf 'FRESH CONTENT\n' > "$dest"
+exit 0
+STUB
+chmod +x "$LISTING_BIN/curl"
+
+LISTING_DIR="$TEST_DIR/listing-target"
+MULTI_FILE_SKILL="linear"
+mkdir -p "$LISTING_DIR/skills/$MULTI_FILE_SKILL/scripts"
+printf 'STALE\n' > "$LISTING_DIR/skills/$MULTI_FILE_SKILL/SKILL.md"
+printf 'STALE\n' > "$LISTING_DIR/skills/$MULTI_FILE_SKILL/scripts/linear.ts"
+
+listing_output=$(cd "$REPO_DIR" && PATH="$LISTING_BIN:$PATH" bash ./update.sh -v \
+    --claude-dir "$LISTING_DIR")
+
+# The unlistable skill has to be named, not left to look like a clean refresh.
+grep -Fq "Partial: $MULTI_FILE_SKILL" <<< "$listing_output"
+grep -Fq "only SKILL.md was refreshed: $MULTI_FILE_SKILL" <<< "$listing_output"
+if grep -Fq "Update complete (" <<< "$listing_output"; then
+    echo "update reported a clean success while a skill was only partly refreshed" >&2
+    echo "$listing_output" >&2
+    exit 1
+fi
+
+# The part it could reach is still refreshed; the run reports, it does not stop.
+if ! grep -Fqx "FRESH CONTENT" "$LISTING_DIR/skills/$MULTI_FILE_SKILL/SKILL.md"; then
+    echo "update skipped the SKILL.md it could still fetch" >&2
+    exit 1
+fi
+
 echo "update/uninstall tests passed"

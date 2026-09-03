@@ -144,6 +144,15 @@ download_file() {
     return 1
 }
 
+# A skill is more than its SKILL.md: skills/linear also ships install.sh and the
+# scripts/linear.ts the skill executes. Which files those are is only known from
+# the contents API, and that listing is the first thing to go -- it is rate
+# limited to 60 requests an hour unauthenticated, while raw.githubusercontent.com
+# is not. So the common failure is a listing that 403s while every download
+# still succeeds, and the fallback narrowed the skill to SKILL.md alone: the run
+# refreshed the documentation, left the executable stale, and reported a clean
+# "Update complete (1 files)". Record the skill instead so the summary says the
+# update was partial and names what to re-run.
 update_skill() {
     local skill="$1"
     local skill_dir="$CLAUDE_DIR/skills/$skill"
@@ -155,9 +164,11 @@ update_skill() {
 
     local root_files
     local subdirs
+    local listed=true
 
     root_files=$(fetch_repo_list "skills/$skill" "file" 2>/dev/null || true)
     if [ -z "$root_files" ]; then
+        listed=false
         root_files="SKILL.md"
     fi
 
@@ -169,6 +180,11 @@ update_skill() {
             chmod +x "$skill_dir/$file"
         fi
     done
+
+    if [ "$listed" = false ]; then
+        print_verbose "Partial: $skill (could not list its files, refreshed SKILL.md only)"
+        INCOMPLETE_SKILLS+=("$skill")
+    fi
 
     subdirs=$(fetch_repo_list "skills/$skill" "dir" 2>/dev/null || true)
     if [ -n "$subdirs" ]; then
@@ -284,6 +300,8 @@ fi
 
 updated=0
 failed=0
+# Skills whose file listing could not be read, so only SKILL.md was refreshed.
+INCOMPLETE_SKILLS=()
 
 # Update agents (only if installed)
 print_status "Updating agents..."
@@ -346,11 +364,19 @@ else
 fi
 
 echo
+if [ ${#INCOMPLETE_SKILLS[@]} -gt 0 ]; then
+    print_warning "Could not list the files for these skills, so only SKILL.md was refreshed: ${INCOMPLETE_SKILLS[*]}"
+    print_warning "The GitHub contents API is rate limited to 60 requests an hour; re-run update.sh later to finish them"
+    echo
+fi
+
 if [ "$DRY_RUN" = true ]; then
     print_warning "DRY RUN complete - no files were modified"
 else
-    if [ $failed -eq 0 ]; then
+    if [ $failed -eq 0 ] && [ ${#INCOMPLETE_SKILLS[@]} -eq 0 ]; then
         print_success "Update complete ($updated files)"
+    elif [ $failed -eq 0 ]; then
+        print_warning "Update partially complete ($updated files)"
     else
         print_warning "Update complete with errors ($updated updated, $failed failed)"
     fi
