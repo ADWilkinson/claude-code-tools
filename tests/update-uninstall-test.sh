@@ -598,12 +598,12 @@ if ! cmp -s "$REPO_DIR/skills/$SKILL_NAME/SKILL.md" "$OFFLINE_DIR/skills/$SKILL_
     exit 1
 fi
 
-# A listing the contents API refuses while raw.githubusercontent.com still
-# serves is the ordinary failure, not the rare one: the contents API is rate
-# limited to 60 requests an hour unauthenticated and one update.sh run spends
-# more than a dozen of them. The fallback narrowed a skill to SKILL.md, so
+# A listing the git trees API refuses while raw.githubusercontent.com still
+# serves is the remaining failure: the trees endpoint shares the 60-requests-an-hour
+# unauthenticated budget. The fallback narrowed a skill to SKILL.md, so
 # skills/linear kept a stale scripts/linear.ts -- the file the skill actually
-# executes -- and the run still printed a clean "Update complete".
+# executes -- and a run that cannot list files must not print a clean
+# "Update complete".
 LISTING_BIN="$TEST_DIR/listing-bin"
 mkdir -p "$LISTING_BIN"
 cat > "$LISTING_BIN/curl" <<'STUB'
@@ -617,8 +617,9 @@ while [ $# -gt 0 ]; do
     fi
     shift
 done
-# A request without -o is a contents-API listing. 22 is curl's exit code for an
-# HTTP error under --fail, which is what a rate-limited 403 gives it.
+# A request without -o is a listing (git trees, or the old contents API).
+# 22 is curl's exit code for an HTTP error under --fail, which is what a
+# rate-limited 403 gives it.
 if [ -z "$dest" ]; then
     exit 22
 fi
@@ -648,6 +649,102 @@ fi
 # The part it could reach is still refreshed; the run reports, it does not stop.
 if ! grep -Fqx "FRESH CONTENT" "$LISTING_DIR/skills/$MULTI_FILE_SKILL/SKILL.md"; then
     echo "update skipped the SKILL.md it could still fetch" >&2
+    exit 1
+fi
+
+# A successful listing has to be one git-trees request, not one contents request
+# per directory. The contents API is rate limited to 60 unauthenticated calls an
+# hour and a current run spends 26 of them, so the ordinary path is the #25
+# fallback: SKILL.md refreshes, scripts/linear.ts stays stale, and anything two
+# directories down is never listed even when the API is healthy. Trees returns
+# the whole repo in one call and includes nested blobs.
+TREE_BIN="$TEST_DIR/tree-bin"
+TREE_CURL_LOG="$TEST_DIR/tree-curl.log"
+mkdir -p "$TREE_BIN"
+cat > "$TREE_BIN/curl" <<'STUB'
+#!/bin/bash
+dest=""
+url=""
+while [ $# -gt 0 ]; do
+    if [ "$1" = "-o" ]; then
+        dest="$2"
+        shift 2
+        continue
+    fi
+    case "$1" in
+        http://*|https://*) url="$1" ;;
+    esac
+    shift
+done
+if [ -n "${TREE_CURL_LOG:-}" ]; then
+    printf '%s\n' "$url" >> "$TREE_CURL_LOG"
+fi
+# Listings have no -o. Serve the recursive tree; refuse the contents API so a
+# run that still walks directories per skill cannot pass by accident.
+if [ -z "$dest" ]; then
+    case "$url" in
+        */git/trees/*)
+            cat <<'JSON'
+{"sha":"test","truncated":false,"tree":[
+{"path":"skills/linear/SKILL.md","type":"blob"},
+{"path":"skills/linear/install.sh","type":"blob"},
+{"path":"skills/linear/scripts/linear.ts","type":"blob"},
+{"path":"skills/linear/scripts/lib/extra.ts","type":"blob"},
+{"path":"hooks/auto-format.sh","type":"blob"},
+{"path":"hooks/README.md","type":"blob"},
+{"path":"hooks/hooks.json","type":"blob"}
+]}
+JSON
+            exit 0
+            ;;
+        *)
+            exit 22
+            ;;
+    esac
+fi
+printf 'FRESH CONTENT\n' > "$dest"
+exit 0
+STUB
+chmod +x "$TREE_BIN/curl"
+
+TREE_DIR="$TEST_DIR/tree-target"
+mkdir -p "$TREE_DIR/skills/$MULTI_FILE_SKILL/scripts"
+printf 'STALE\n' > "$TREE_DIR/skills/$MULTI_FILE_SKILL/SKILL.md"
+printf 'STALE\n' > "$TREE_DIR/skills/$MULTI_FILE_SKILL/scripts/linear.ts"
+: > "$TREE_CURL_LOG"
+
+tree_output=$(cd "$REPO_DIR" && TREE_CURL_LOG="$TREE_CURL_LOG" PATH="$TREE_BIN:$PATH" \
+    bash ./update.sh -v --claude-dir "$TREE_DIR")
+
+if grep -Fq "Update partially complete" <<< "$tree_output"; then
+    echo "update reported a partial refresh when the git tree listed the skill" >&2
+    echo "$tree_output" >&2
+    exit 1
+fi
+grep -Fq "Update complete" <<< "$tree_output"
+if grep -Fq "with errors" <<< "$tree_output"; then
+    echo "a tree-listed update reported errors" >&2
+    echo "$tree_output" >&2
+    exit 1
+fi
+
+for rel in SKILL.md scripts/linear.ts scripts/lib/extra.ts; do
+    if ! grep -Fqx "FRESH CONTENT" "$TREE_DIR/skills/$MULTI_FILE_SKILL/$rel"; then
+        echo "tree listing did not refresh skills/$MULTI_FILE_SKILL/$rel" >&2
+        exit 1
+    fi
+done
+
+tree_calls=$(grep -c '/git/trees/' "$TREE_CURL_LOG" || true)
+contents_calls=$(grep -c '/contents' "$TREE_CURL_LOG" || true)
+if [ "$tree_calls" -ne 1 ]; then
+    echo "update listed the repo $tree_calls times via git/trees; expected 1" >&2
+    cat "$TREE_CURL_LOG" >&2
+    exit 1
+fi
+if [ "$contents_calls" -ne 0 ]; then
+    echo "update still walked the contents API ($contents_calls calls)" >&2
+    cat "$TREE_CURL_LOG" >&2
     exit 1
 fi
 

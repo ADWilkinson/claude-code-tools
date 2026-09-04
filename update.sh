@@ -19,10 +19,13 @@ REPO_OWNER="ADWilkinson"
 REPO_NAME="claude-code-tools"
 REPO_BRANCH="main"
 REPO_RAW_BASE="https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${REPO_BRANCH}"
-REPO_API_BASE="https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents"
+REPO_TREE_URL="https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/git/trees/${REPO_BRANCH}?recursive=1"
 CLAUDE_DIR="$HOME/.claude"
 DRY_RUN=false
 VERBOSE=false
+# Blob paths from one git trees request. Empty means the listing failed and the
+# DEFAULT_* lists plus the SKILL.md-only fallback apply.
+TREE_PATHS=""
 
 print_status() { echo -e "${BLUE}→${NC} $1"; }
 print_success() { echo -e "${GREEN}✓${NC} $1"; }
@@ -83,17 +86,61 @@ DEFAULT_HOOKS=(
     "constraint-persistence.sh"
 )
 
-fetch_repo_list() {
-    local path="$1"
-    local type="$2"
+# One request lists every blob. The contents API needs a call per directory and
+# a current run spends 26 of the 60 unauthenticated requests allowed per hour,
+# so the ordinary failure is a mid-walk 403 while raw.githubusercontent.com
+# still serves. Trees and contents share that quota, so a trees miss falls
+# through to the DEFAULT lists rather than walking contents.
+fetch_repo_tree() {
+    local payload
+
+    payload=$(curl -sf "$REPO_TREE_URL" 2>/dev/null) || return 1
 
     if command -v python3 >/dev/null 2>&1; then
-        curl -sf "${REPO_API_BASE}/${path}" 2>/dev/null | python3 -c 'import json,sys; data=json.load(sys.stdin); want=sys.argv[1] if len(sys.argv)>1 else "file"; import sys as _sys; isinstance(data,list) or _sys.exit(1); [print(item.get("name")) for item in data if item.get("type")==want and item.get("name")]' "$type" || return 1
+        python3 -c 'import json,sys
+data=json.load(sys.stdin)
+if not isinstance(data, dict) or data.get("truncated") is True:
+    sys.exit(1)
+tree=data.get("tree")
+if not isinstance(tree, list):
+    sys.exit(1)
+for item in tree:
+    path=item.get("path")
+    if item.get("type")=="blob" and path:
+        print(path)
+' <<< "$payload" || return 1
     elif command -v jq >/dev/null 2>&1; then
-        curl -sf "${REPO_API_BASE}/${path}" 2>/dev/null | jq -r ".[] | select(.type==\"${type}\") | .name" || return 1
+        echo "$payload" | jq -e '.truncated != true and (.tree | type == "array")' >/dev/null || return 1
+        echo "$payload" | jq -r '.tree[] | select(.type=="blob" and .path) | .path' || return 1
     else
         return 1
     fi
+}
+
+# Print files a skill ships, relative to skills/<name>/, from TREE_PATHS.
+skill_files_from_tree() {
+    local skill="$1"
+    local prefix="skills/${skill}/"
+    local path
+
+    while IFS= read -r path; do
+        [ -z "$path" ] && continue
+        case "$path" in
+            "$prefix"*)
+                printf '%s\n' "${path#"$prefix"}"
+                ;;
+        esac
+    done <<< "$TREE_PATHS"
+}
+
+list_contains() {
+    local needle="$1"
+    shift
+    local item
+    for item in "$@"; do
+        [ "$item" = "$needle" ] && return 0
+    done
+    return 1
 }
 
 # Returns non-zero on a failed download and counts it in $failed. Callers must
@@ -145,14 +192,12 @@ download_file() {
 }
 
 # A skill is more than its SKILL.md: skills/linear also ships install.sh and the
-# scripts/linear.ts the skill executes. Which files those are is only known from
-# the contents API, and that listing is the first thing to go -- it is rate
-# limited to 60 requests an hour unauthenticated, while raw.githubusercontent.com
-# is not. So the common failure is a listing that 403s while every download
-# still succeeds, and the fallback narrowed the skill to SKILL.md alone: the run
-# refreshed the documentation, left the executable stale, and reported a clean
-# "Update complete (1 files)". Record the skill instead so the summary says the
-# update was partial and names what to re-run.
+# scripts/linear.ts the skill executes, including files more than one directory
+# deep. Which files those are is known from the git tree. When that listing is
+# missing the fallback narrows the skill to SKILL.md alone: the run refreshes
+# the documentation, leaves the executable stale, and must not look like a
+# clean success. Record the skill instead so the summary says the update was
+# partial and names what to re-run.
 update_skill() {
     local skill="$1"
     local skill_dir="$CLAUDE_DIR/skills/$skill"
@@ -162,18 +207,22 @@ update_skill() {
         return 0
     fi
 
-    local root_files
-    local subdirs
+    local files
     local listed=true
 
-    root_files=$(fetch_repo_list "skills/$skill" "file" 2>/dev/null || true)
-    if [ -z "$root_files" ]; then
+    if [ -n "$TREE_PATHS" ]; then
+        files=$(skill_files_from_tree "$skill")
+        if [ -z "$files" ]; then
+            listed=false
+            files="SKILL.md"
+        fi
+    else
         listed=false
-        root_files="SKILL.md"
+        files="SKILL.md"
     fi
 
     local IFS=$'\n'
-    for file in $root_files; do
+    for file in $files; do
         [ -z "$file" ] && continue
         download_file "$REPO_RAW_BASE/skills/$skill/$file" "$skill_dir/$file" || continue
         if [ "$file" = "install.sh" ] && [ "$DRY_RUN" = false ]; then
@@ -184,21 +233,6 @@ update_skill() {
     if [ "$listed" = false ]; then
         print_verbose "Partial: $skill (could not list its files, refreshed SKILL.md only)"
         INCOMPLETE_SKILLS+=("$skill")
-    fi
-
-    subdirs=$(fetch_repo_list "skills/$skill" "dir" 2>/dev/null || true)
-    if [ -n "$subdirs" ]; then
-        for subdir in $subdirs; do
-            [ -z "$subdir" ] && continue
-            local sub_files
-            sub_files=$(fetch_repo_list "skills/$skill/$subdir" "file" 2>/dev/null || true)
-            if [ -n "$sub_files" ]; then
-                for file in $sub_files; do
-                    [ -z "$file" ] && continue
-                    download_file "$REPO_RAW_BASE/skills/$skill/$subdir/$file" "$skill_dir/$subdir/$file" || true
-                done
-            fi
-        done
     fi
 
     if [ "$DRY_RUN" = false ] && [ -f "$skill_dir/package.json" ]; then
@@ -250,33 +284,51 @@ done
 
 CLAUDE_DIR="${CLAUDE_DIR/#\~/$HOME}"
 
-AGENTS_RAW=$(fetch_repo_list "agents" "file" 2>/dev/null || true)
-SKILLS_RAW=$(fetch_repo_list "skills" "dir" 2>/dev/null || true)
-HOOKS_RAW=$(fetch_repo_list "hooks" "file" 2>/dev/null || true)
+TREE_PATHS=$(fetch_repo_tree 2>/dev/null || true)
 
-if [ -n "$AGENTS_RAW" ]; then
-    IFS=$'\n' AGENTS=($AGENTS_RAW)
-else
+AGENTS=()
+SKILLS=()
+HOOKS=()
+
+if [ -n "$TREE_PATHS" ]; then
+    while IFS= read -r path; do
+        [ -z "$path" ] && continue
+        case "$path" in
+            agents/*.md)
+                name="${path#agents/}"
+                case "$name" in
+                    */*) ;;
+                    *) AGENTS+=("$name") ;;
+                esac
+                ;;
+            skills/*/*)
+                name="${path#skills/}"
+                skill="${name%%/*}"
+                if [ -n "$skill" ]; then
+                    if [ ${#SKILLS[@]} -eq 0 ] || ! list_contains "$skill" "${SKILLS[@]}"; then
+                        SKILLS+=("$skill")
+                    fi
+                fi
+                ;;
+            hooks/*.sh)
+                name="${path#hooks/}"
+                case "$name" in
+                    */*) ;;
+                    *) HOOKS+=("$name") ;;
+                esac
+                ;;
+        esac
+    done <<< "$TREE_PATHS"
+fi
+
+# A successful tree can legitimately list no agents (or no skills, or no
+# hooks). Only fall back when the listing itself failed.
+if [ -z "$TREE_PATHS" ]; then
     AGENTS=("${DEFAULT_AGENTS[@]}")
-fi
-
-if [ -n "$SKILLS_RAW" ]; then
-    IFS=$'\n' SKILLS=($SKILLS_RAW)
-else
     SKILLS=("${DEFAULT_SKILLS[@]}")
-fi
-
-# hooks/ also holds README.md and hooks.json, which are documentation and a
-# settings.json template rather than hooks. Filtering the listing to shell
-# scripts keeps the fetched list identical to DEFAULT_HOOKS, so an update
-# behaves the same whether or not the contents API is reachable.
-if [ -n "$HOOKS_RAW" ]; then
-    HOOKS_RAW=$(grep '\.sh$' <<< "$HOOKS_RAW" || true)
-fi
-
-if [ -n "$HOOKS_RAW" ]; then
-    IFS=$'\n' HOOKS=($HOOKS_RAW)
-else
+    # hooks/ also holds README.md and hooks.json, which are documentation and a
+    # settings.json template rather than hooks. The DEFAULT list is already the
+    # shell scripts, matching the filter applied when the tree is reachable.
     HOOKS=("${DEFAULT_HOOKS[@]}")
 fi
 
@@ -366,7 +418,7 @@ fi
 echo
 if [ ${#INCOMPLETE_SKILLS[@]} -gt 0 ]; then
     print_warning "Could not list the files for these skills, so only SKILL.md was refreshed: ${INCOMPLETE_SKILLS[*]}"
-    print_warning "The GitHub contents API is rate limited to 60 requests an hour; re-run update.sh later to finish them"
+    print_warning "The GitHub git trees API is rate limited to 60 requests an hour; re-run update.sh later to finish them"
     echo
 fi
 
