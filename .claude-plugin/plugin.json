@@ -1,7 +1,6 @@
 {
   "name": "cct",
   "description": "14 specialized agents with confidence scoring and anti-patterns, 11 skills (manual and auto-invoked) with examples and false-positive lists, and 2 hooks. Framework-agnostic tools that adapt to your stack.",
-  "version": "2.0.0",
   "author": {
     "name": "Andrew Wilkinson",
     "url": "https://x.com/andrewwilkinson"

@@ -108,4 +108,51 @@ if command -v jq >/dev/null 2>&1; then
     done <<< "$COMMANDS"
 fi
 
+# Claude Code uses the plugin version as the update cache key. For a non-command
+# source it resolves plugin.json's version, then the marketplace entry's, then
+# the git commit SHA. Setting either field pins the plugin to that string, so
+# users only see an update when the string changes. This repo releases by
+# merging to main and has no release step that bumps a version, so a pinned
+# string strands every existing install on whatever was current when they
+# installed. Leaving both out lets the SHA of the ./ source carry the release,
+# which moves on every merge.
+PLUGIN_MANIFEST="$REPO_DIR/.claude-plugin/plugin.json"
+MARKETPLACE_MANIFEST="$REPO_DIR/.claude-plugin/marketplace.json"
+
+for manifest in "$PLUGIN_MANIFEST" "$MARKETPLACE_MANIFEST"; do
+    if [ ! -f "$manifest" ]; then
+        echo "no plugin manifest at $manifest" >&2
+        exit 1
+    fi
+done
+
+python3 - "$PLUGIN_MANIFEST" "$MARKETPLACE_MANIFEST" <<'VERSION_PY'
+import json, sys
+
+plugin_path, marketplace_path = sys.argv[1], sys.argv[2]
+failures = []
+
+with open(plugin_path) as fh:
+    plugin = json.load(fh)
+
+if "version" in plugin:
+    failures.append(
+        f"{plugin_path} pins version {plugin['version']!r}; remove it so the "
+        "commit SHA carries the release"
+    )
+
+with open(marketplace_path) as fh:
+    marketplace = json.load(fh)
+
+for entry in marketplace["plugins"]:
+    if "version" in entry:
+        failures.append(
+            f"{marketplace_path} pins version {entry['version']!r} for plugin "
+            f"{entry['name']!r}; remove it so the commit SHA carries the release"
+        )
+
+if failures:
+    sys.exit("\n".join(failures))
+VERSION_PY
+
 echo "plugin manifest tests passed"
