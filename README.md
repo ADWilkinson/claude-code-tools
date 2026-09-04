@@ -189,10 +189,11 @@ Agents, skills, hooks, and statusline are each refreshed only where they are
 already installed. `update.sh` never adds a component you skipped at install
 time, and never restores one you deliberately deleted.
 
-Which files a skill ships is read from the GitHub contents API, which is rate
-limited to 60 requests an hour. When that listing is unavailable a skill falls
-back to its `SKILL.md` alone, so the run reports `Update partially complete` and
-names the skills it could not read; re-run `update.sh` later to finish them.
+Which files a skill ships is read from one GitHub git trees request. That
+endpoint shares the unauthenticated 60-requests-an-hour budget. When the
+listing is unavailable a skill falls back to its `SKILL.md` alone, so the run
+reports `Update partially complete` and names the skills it could not read;
+re-run `update.sh` later to finish them.
 
 ## Uninstall
 
